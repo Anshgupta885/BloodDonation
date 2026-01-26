@@ -1,1 +1,11 @@
 node_modules/
+.env
+dist/
+logs/
+.DS_Store
+npm-debug.log
+.vscode/
+coverage/
+.idea/
+*.log
+*.tmp
