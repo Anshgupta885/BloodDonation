@@ -1,4 +1,7 @@
 const Donor = require('../models/Donor');
+const Hospital = require('../models/Hospital');
+const Request = require('../models/Request');
+const Admin = require('../models/Admin');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
@@ -91,6 +94,65 @@ async function logoutHospital(req, res){
     res.status(200).json({message:"Logged out successfully"});  
 }
 
+async function RegisterRequest(req, res) {
+    const{Bloodgroup, Units, urgency, patientName, city, byDate, purpose, ContactName, contactPhone} = req.body;
+    const newRequest = new Request({
+        Bloodgroup: Bloodgroup,
+        Units: Units,
+        urgency: urgency,
+        patientName: patientName,
+        city: city,
+        byDate: byDate,
+        purpose: purpose,
+        ContactName: ContactName,
+        contactPhone: contactPhone
+    });
+    const token = jwt.sign({ id: newRequest._id }, process.env.JWT_SECRET_KEY);
+    res.cookie('token', token);
+    await newRequest.save();
+    res.status(201).json({message:"Request registered successfully"});
+}
+
+async function LoginRequest(req, res) {
+    const { email, password } = req.body;
+    const request = await Request.findOne({ email: email });
+    if (!request) {
+        return res.status(400).json({ message: "Invalid email or password" });
+    }
+    const isPasswordValid = await bcrypt.compare(password, request.password);
+    if (!isPasswordValid) {
+        return res.status(400).json({ message: "Invalid email or password" });
+    }
+    const token = jwt.sign({ id: request._id }, process.env.JWT_SECRET_KEY);
+    res.cookie('token', token, { httpOnly: true });
+    res.status(200).json({ message: "Login successful" });
+}
+
+async function logoutRequest(req, res){
+    res.clearCookie('token');
+    res.status(200).json({message:"Logged out successfully"});  
+}
+
+async function LoginAdmin(req, res) {
+    const { email, password } = req.body;
+    const admin = await Admin.findOne({ email: email });
+    if (!admin) {
+        return res.status(400).json({ message: "Invalid email or password" });
+    }   
+    const isPasswordValid = await bcrypt.compare(password, admin.password);
+    if (!isPasswordValid) {
+        return res.status(400).json({ message: "Invalid email or password" });
+    }
+    const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET_KEY);
+    res.cookie('token', token, { httpOnly: true });
+    res.status(200).json({ message: "Login successful" });
+}
+
+async function logoutAdmin(req, res){   
+    res.clearCookie('token');
+    res.status(200).json({message:"Logged out successfully"});  
+}
+
 
 module.exports = {
     registerDonor, 
@@ -98,5 +160,10 @@ module.exports = {
     logoutDonor,
     registerHospital,
     loginHospital,
-    logoutHospital
+    logoutHospital,
+    RegisterRequest,
+    LoginRequest,
+    logoutRequest,
+    LoginAdmin,
+    logoutAdmin
 };

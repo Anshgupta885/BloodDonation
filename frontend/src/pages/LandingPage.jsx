@@ -78,7 +78,7 @@ export default function LandingPage() {
                   Become a Donor
                 </Link>
                 <Link
-                  to="/register"
+                  to="/create-request"
                   className="px-8 py-4 bg-white text-red-600 border-2 border-red-600 rounded-xl font-medium hover:bg-red-50 transition-all"
                 >
                   Request Blood

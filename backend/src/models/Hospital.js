@@ -1,7 +1,4 @@
 const mongoose = require('mongoose');
-mongoose.connect(process.env.DB_CONNECTION_STRING)
-    .then(() => console.log('MongoDB connected'))
-    .catch(err => console.log(err));
  
 const HospitalSchema = new mongoose.Schema({
     HospitalName: { type: String, required: true },

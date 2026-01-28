@@ -15,7 +15,9 @@ export default function LoginPage({ onLogin }) {
     
     // Mock login
     const mockUser = {
-      name: formData.userType === 'donor' ? 'John Doe' : formData.userType === 'hospital' ? 'City Hospital' : 'Admin User',
+      name: formData.userType === 'donor' ? 'John Doe' : 
+            formData.userType === 'hospital' ? 'City Hospital' : 
+            formData.userType === 'requester' ? 'Jane Requester' : 'Admin User',
       email: formData.email,
       type: formData.userType,
       bloodGroup: formData.userType === 'donor' ? 'O+' : null,
@@ -28,6 +30,8 @@ export default function LoginPage({ onLogin }) {
       navigate('/donor/dashboard');
     } else if (formData.userType === 'hospital') {
       navigate('/hospital/dashboard');
+    } else if (formData.userType === 'requester') {
+      navigate('/request-status', { state: { user: mockUser } });
     } else {
       navigate('/admin/dashboard');
     }
@@ -82,13 +86,13 @@ export default function LoginPage({ onLogin }) {
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Login As
               </label>
-              <div className="grid grid-cols-3 gap-3">
-                {['donor', 'hospital', 'admin'].map((type) => (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {['donor', 'hospital', 'admin', 'requester'].map((type) => (
                   <button
                     key={type}
                     type="button"
                     onClick={() => setFormData({ ...formData, userType: type })}
-                    className={`px-4 py-3 rounded-xl font-medium capitalize transition-all ${
+                    className={`px-2 py-3 rounded-xl font-medium capitalize transition-all text-sm ${
                       formData.userType === type
                         ? 'bg-red-600 text-white shadow-lg shadow-red-500/25'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'

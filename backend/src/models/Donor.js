@@ -1,10 +1,4 @@
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-dotenv.config();
-
-mongoose.connect(process.env.DB_CONNECTION_STRING)
-    .then(() => console.log('MongoDB connected'))
-    .catch(err => console.log(err));
 
 const DonorSchema = new mongoose.Schema({
     FullName: { type: String, required: true },

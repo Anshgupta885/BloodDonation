@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router';
 import DashboardLayout from './DashboardLayout';
 import { Clock, CheckCircle, XCircle, AlertCircle, Droplet, Calendar, Users } from 'lucide-react';
 
-export default function RequestStatus({ user, onLogout }) {
+export default function RequestStatus({ user: propUser, onLogout }) {
+  const location = useLocation();
+  const user = propUser || location.state?.user;
+  const userType = user?.type || 'hospital';
   const [activeTab, setActiveTab] = useState('all');
 
   const requests = [
@@ -91,7 +95,7 @@ export default function RequestStatus({ user, onLogout }) {
   };
 
   return (
-    <DashboardLayout userType="hospital" user={user} onLogout={onLogout}>
+    <DashboardLayout userType={userType} user={user} onLogout={onLogout}>
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Page Header */}
         <div>
