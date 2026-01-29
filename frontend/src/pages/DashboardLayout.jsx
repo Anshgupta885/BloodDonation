@@ -1,8 +1,8 @@
 import React from 'react';
-import { Link, useNavigate, useLocation } from 'react-router';
+import { Link, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { Droplet, LogOut, User, Home, Activity, Search, FileText, Users, Building2, Settings } from 'lucide-react';
 
-export default function DashboardLayout({ children, userType, user, onLogout }) {
+export default function DashboardLayout({ userType, user, onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -12,22 +12,22 @@ export default function DashboardLayout({ children, userType, user, onLogout }) 
   };
 
   const getDonorNavItems = () => [
-    { path: '/donor/dashboard', icon: Home, label: 'Dashboard' },
-    { path: '/donor/profile', icon: User, label: 'Profile' },
-    { path: '/donor/history', icon: Activity, label: 'Donation History' },
+    { path: '/dashboard/donor', icon: Home, label: 'Dashboard' },
+    { path: '/profile', icon: User, label: 'Profile' },
+    { path: '/history', icon: Activity, label: 'Donation History' },
   ];
 
   const getHospitalNavItems = () => [
-    { path: '/hospital/dashboard', icon: Home, label: 'Dashboard' },
-    { path: '/hospital/create-request', icon: FileText, label: 'Create Request' },
-    { path: '/hospital/search-donors', icon: Search, label: 'Search Donors' },
-    { path: '/hospital/request-status', icon: Activity, label: 'Request Status' },
+    { path: '/dashboard/hospital', icon: Home, label: 'Dashboard' },
+    { path: '/dashboard/create-request', icon: FileText, label: 'Create Request' },
+    { path: '/search', icon: Search, label: 'Search Donors' },
+    { path: '/request-status', icon: Activity, label: 'Request Status' },
   ];
 
   const getAdminNavItems = () => [
-    { path: '/admin/dashboard', icon: Home, label: 'Dashboard' },
-    { path: '/admin/manage-donors', icon: Users, label: 'Manage Donors' },
-    { path: '/admin/manage-hospitals', icon: Building2, label: 'Manage Hospitals' },
+    { path: '/dashboard/admin', icon: Home, label: 'Dashboard' },
+    { path: '/manage-donors', icon: Users, label: 'Manage Donors' },
+    { path: '/manage-hospitals', icon: Building2, label: 'Manage Hospitals' },
   ];
 
   const navItems = 
@@ -117,7 +117,7 @@ export default function DashboardLayout({ children, userType, user, onLogout }) 
 
         {/* Main Content */}
         <main className="flex-1 p-6 mb-20 md:mb-0">
-          {children}
+          <Outlet />
         </main>
       </div>
     </div>

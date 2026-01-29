@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { registerHospital, loginHospital, logoutHospital } = require('../controllers/AuthController');
-
+const { registerHospital, loginHospital, logoutHospital, getHospitalDashboard } = require('../controllers/AuthController');
+const authMiddleware = require('../middlewares/auth.middlewares');
+const Hospital = require('../models/Hospital');
 router.post('/register/hospital', registerHospital);
 router.post('/login/hospital', loginHospital);
 router.get('/logout/hospital', logoutHospital);
-
+router.get('/hospital/dashboard', authMiddleware(Hospital));
 module.exports = router;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router-dom';
 import { Droplet, Mail, Lock, ArrowRight } from 'lucide-react';
 
 export default function LoginPage({ onLogin }) {
@@ -27,13 +27,13 @@ export default function LoginPage({ onLogin }) {
     
     // Navigate based on user type
     if (formData.userType === 'donor') {
-      navigate('/donor/dashboard');
+      navigate('/dashboard/donor');
     } else if (formData.userType === 'hospital') {
-      navigate('/hospital/dashboard');
+      navigate('/dashboard/hospital');
     } else if (formData.userType === 'requester') {
       navigate('/request-status', { state: { user: mockUser } });
     } else {
-      navigate('/admin/dashboard');
+      navigate('/dashboard/admin');
     }
   };
 

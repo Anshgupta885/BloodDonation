@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router';
+import { useNavigate, Link } from 'react-router-dom';
 import DashboardLayout from './DashboardLayout';
 import { 
   Droplet, MapPin, FileText, AlertCircle, Calendar, Send,
   Phone, Mail, Facebook, Twitter, Instagram 
 } from 'lucide-react';
 
-export default function CreateRequest({ user, onLogout }) {
+export default function CreateRequest({ user }) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     bloodGroup: 'A+',
@@ -34,7 +34,7 @@ export default function CreateRequest({ user, onLogout }) {
     e.preventDefault();
     // Mock submission
     if (user) {
-        navigate('/hospital/request-status');
+        navigate('/request-status');
     } else {
         // For public users, maybe go back to home or show a success message
         // For now, redirect to home
@@ -51,7 +51,7 @@ export default function CreateRequest({ user, onLogout }) {
     }
   };
 
-  const RequestFormContent = (
+  return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Page Header */}
       <div>
@@ -257,115 +257,13 @@ export default function CreateRequest({ user, onLogout }) {
           </button>
           <button
             type="button"
-            onClick={() => navigate(user ? '/hospital/dashboard' : '/')}
+            onClick={() => navigate(user ? '/dashboard/hospital' : '/')}
             className="px-6 py-4 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
           >
             Cancel
           </button>
         </div>
       </form>
-    </div>
-  );
-
-  // If user is logged in, use Dashboard Layout
-  if (user) {
-    return (
-      <DashboardLayout userType="hospital" user={user} onLogout={onLogout}>
-        {RequestFormContent}
-      </DashboardLayout>
-    );
-  }
-
-  // If public user, use Public/Landing Layout
-  return (
-    <div className="min-h-screen bg-white">
-      {/* Public Navbar */}
-      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-linear-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center">
-                <Droplet className="w-6 h-6 text-white" fill="white" />
-              </div>
-              <span className="text-xl font-bold text-gray-900">LifeFlow</span>
-            </Link>
-            
-            <Link
-              to="/login"
-              className="px-6 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
-            >
-              Sign In
-            </Link>
-          </div>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <main className="py-12 px-6 bg-gray-50 min-h-[calc(100vh-300px)]">
-        {RequestFormContent}
-      </main>
-
-      {/* Public Footer */}
-      <footer className="bg-gray-900 text-gray-300 py-12">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div className="col-span-2">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-linear-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center">
-                  <Droplet className="w-6 h-6 text-white" fill="white" />
-                </div>
-                <span className="text-xl font-bold text-white">LifeFlow</span>
-              </div>
-              <p className="text-gray-400 mb-4">
-                Connecting donors with those in need. Every drop counts, every life matters.
-              </p>
-              <div className="flex gap-4">
-                <a href="#" className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 transition-colors">
-                  <Facebook className="w-5 h-5" />
-                </a>
-                <a href="#" className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 transition-colors">
-                  <Twitter className="w-5 h-5" />
-                </a>
-                <a href="#" className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 transition-colors">
-                  <Instagram className="w-5 h-5" />
-                </a>
-              </div>
-            </div>
-            
-            <div>
-              <h3 className="text-white font-medium mb-4">Quick Links</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">How to Donate</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">FAQs</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="text-white font-medium mb-4">Contact</h3>
-              <ul className="space-y-3">
-                <li className="flex items-center gap-2">
-                  <Phone className="w-4 h-4" />
-                  <span>1-800-DONATE</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Mail className="w-4 h-4" />
-                  <span>help@lifeflow.org</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  <span>New York, NY</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-800 pt-8 text-center text-gray-500">
-            <p>&copy; 2026 LifeFlow. All rights reserved. Saving lives, one donation at a time.</p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

@@ -153,9 +153,24 @@ async function logoutAdmin(req, res){
     res.status(200).json({message:"Logged out successfully"});  
 }
 
+async function getDonorDashboard(req, res) {
+    res.status(200).json({ message: "Welcome to the donor dashboard" });
+}
+
+async function getRequestDashboard(req, res) {
+    res.status(200).json({ message: "Welcome to the request dashboard" });
+}
+
+async function getHospitalDashboard(req, res) {
+    res.status(200).json({ message: "Welcome to the hospital dashboard" });
+}
+
+async function getAdminDashboard(req, res) {
+    res.status(200).json({ message: "Welcome to the admin dashboard" });
+}
 
 module.exports = {
-    registerDonor, 
+    registerDonor,
     loginDonor,
     logoutDonor,
     registerHospital,
@@ -165,5 +180,9 @@ module.exports = {
     LoginRequest,
     logoutRequest,
     LoginAdmin,
-    logoutAdmin
+    logoutAdmin,
+    getDonorDashboard,
+    getRequestDashboard,
+    getHospitalDashboard,
+    getAdminDashboard
 };
