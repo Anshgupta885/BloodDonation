@@ -1,21 +1,49 @@
-import React, { useState } from 'react';
-import { Droplet, MapPin, Activity, Calendar, AlertCircle, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Droplet, MapPin, Activity, Calendar, AlertCircle, CheckCircle, Loader } from 'lucide-react';
+import axios from 'axios';
 
-export default function DonorDashboard({ user }) {
+export default function DonorDashboard({ user, onLogout }) {
+  const [dashboardData, setDashboardData] = useState(null);
   const [isAvailable, setIsAvailable] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const emergencyRequests = [
-    { id: 1, hospital: 'City General Hospital', bloodGroup: 'O+', units: 2, distance: '2.3 km', urgency: 'Critical', time: '15 mins ago' },
-    { id: 2, hospital: 'St. Mary Medical Center', bloodGroup: 'O+', units: 1, distance: '4.1 km', urgency: 'Urgent', time: '1 hour ago' },
-    { id: 3, hospital: 'Memorial Hospital', bloodGroup: 'O-', units: 3, distance: '5.8 km', urgency: 'Moderate', time: '3 hours ago' },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setError('Authentication token not found.');
+          return;
+        }
+        const response = await axios.get('/api/donors/donor/dashboard', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setDashboardData(response.data);
+        setIsAvailable(response.data.donor.isAvailable);
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to fetch dashboard data.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
-  const stats = [
-    { label: 'Total Donations', value: '12', icon: Droplet, color: 'red' },
-    { label: 'Lives Saved', value: '36', icon: Activity, color: 'green' },
-    { label: 'Last Donation', value: '45 days', icon: Calendar, color: 'blue' },
-    { label: 'Next Eligible', value: '15 days', icon: CheckCircle, color: 'purple' },
-  ];
+  const handleToggleAvailability = async () => {
+    const originalAvailability = isAvailable;
+    setIsAvailable(!isAvailable); // Optimistic update
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post('/api/donors/donor/availability', {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (err) {
+      setIsAvailable(originalAvailability); // Revert on failure
+      setError('Failed to update availability status.');
+    }
+  };
 
   const getUrgencyColor = (urgency) => {
     switch (urgency) {
@@ -25,22 +53,45 @@ export default function DonorDashboard({ user }) {
       default: return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
+  
+  if (loading) {
+    return (
+        <div className="flex justify-center items-center h-full">
+          <Loader className="w-12 h-12 animate-spin text-red-600" />
+        </div>
+    );
+  }
+
+  if (error) {
+    return (
+        <div className="text-red-600">{error}</div>
+    );
+  }
+
+  if (!dashboardData) return null;
+
+  const { donor, stats, emergencyRequests } = dashboardData;
+
+  const statItems = [
+    { label: 'Total Donations', value: stats.totalDonations, icon: Droplet, color: 'red' },
+    { label: 'Lives Saved', value: stats.livesSaved, icon: Activity, color: 'green' },
+    { label: 'Last Donation', value: stats.lastDonation, icon: Calendar, color: 'blue' },
+    { label: 'Next Eligible', value: stats.nextEligible, icon: CheckCircle, color: 'purple' },
+  ];
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user?.name || 'Donor'}!</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Welcome back, {donor.name}!</h1>
           <p className="text-gray-600 mt-1">Here's your donation dashboard</p>
         </div>
         
-        {/* Availability Toggle */}
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-gray-700">Availability Status:</span>
             <button
-              onClick={() => setIsAvailable(!isAvailable)}
+              onClick={handleToggleAvailability}
               className={`relative inline-flex h-8 w-16 items-center rounded-full transition-colors ${
                 isAvailable ? 'bg-green-500' : 'bg-gray-300'
               }`}
@@ -58,21 +109,19 @@ export default function DonorDashboard({ user }) {
         </div>
       </div>
 
-      {/* Blood Group Badge */}
       <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-6 text-white shadow-lg">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-red-100 mb-1">Your Blood Group</p>
-            <h2 className="text-5xl font-bold">{user?.bloodGroup || 'O+'}</h2>
+            <h2 className="text-5xl font-bold">{donor.bloodGroup}</h2>
             <p className="text-red-100 mt-2">Universal Donor - High Demand</p>
           </div>
           <Droplet className="w-24 h-24 text-white opacity-20" fill="white" />
         </div>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => {
+        {statItems.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <div key={index} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
@@ -88,7 +137,6 @@ export default function DonorDashboard({ user }) {
         })}
       </div>
 
-      {/* Emergency Requests */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center gap-2">
@@ -133,7 +181,6 @@ export default function DonorDashboard({ user }) {
         </div>
       </div>
 
-      {/* Quick Actions */}
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg">
           <h3 className="text-xl font-bold mb-2">Schedule Donation</h3>
@@ -154,4 +201,3 @@ export default function DonorDashboard({ user }) {
     </div>
   );
 }
-

@@ -36,7 +36,8 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-full text-sm font-medium">
-                <Heart className="w-4 h-4" fill="currentColor" />
+                <Heart className="w-4 h-4" fill="
+                currentColor" />
                 <span>Every 2 seconds, someone needs blood</span>
               </div>
               
@@ -57,7 +58,7 @@ export default function LandingPage() {
                   Become a Donor
                 </Link>
                 <Link
-                  to="/create-request"
+                  to="/register?type=requester"
                   className="px-8 py-4 bg-white text-red-600 border-2 border-red-600 rounded-xl font-medium hover:bg-red-50 transition-all"
                 >
                   Request Blood

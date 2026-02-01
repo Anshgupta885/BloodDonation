@@ -1,20 +1,45 @@
-import React, { useState } from 'react';
-import DashboardLayout from './DashboardLayout';
-import { User, Mail, Phone, MapPin, Droplet, Calendar, Edit2, Save } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, Mail, Phone, MapPin, Droplet, Edit2, Save, Loader2 } from 'lucide-react';
+import axios from 'axios';
 
 export default function DonorProfile({ user, onLogout }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 (555) 123-4567',
-    bloodGroup: 'O+',
-    city: 'New York',
-    address: '123 Main Street, Apt 4B',
-    dateOfBirth: '1990-05-15',
-    weight: '75',
-    lastDonation: '2025-12-08',
+    name: '',
+    email: '',
+    phone: '',
+    bloodGroup: '',
+    city: '',
   });
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('/api/donors/donor/profile', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const donor = response.data.donor;
+      setFormData({
+        name: donor.name || '',
+        email: donor.email || '',
+        phone: donor.phone || '',
+        bloodGroup: donor.bloodGroup || '',
+        city: donor.city || '',
+      });
+    } catch (err) {
+      setError('Failed to load profile data');
+      console.error('Error fetching profile:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({
@@ -23,16 +48,42 @@ export default function DonorProfile({ user, onLogout }) {
     });
   };
 
-  const handleSave = () => {
-    setIsEditing(false);
-    // Save logic here
+  const handleSave = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put('/api/donors/donor/profile', formData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setIsEditing(false);
+    } catch (err) {
+      setError('Failed to save profile');
+      console.error('Error saving profile:', err);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 text-red-600 animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <DashboardLayout userType="donor" user={user} onLogout={onLogout}>
       <div className="max-w-4xl mx-auto space-y-6">
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl">
+            {error}
+          </div>
+        )}
+
         {/* Page Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -51,10 +102,11 @@ export default function DonorProfile({ user, onLogout }) {
           ) : (
             <button
               onClick={handleSave}
-              className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-medium"
+              disabled={saving}
+              className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-medium disabled:opacity-50"
             >
-              <Save className="w-4 h-4" />
-              Save Changes
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {saving ? 'Saving...' : 'Save Changes'}
             </button>
           )}
         </div>
@@ -180,85 +232,9 @@ export default function DonorProfile({ user, onLogout }) {
                   </div>
                 )}
               </div>
-
-              {/* Date of Birth */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date of Birth
-                </label>
-                {isEditing ? (
-                  <input
-                    type="date"
-                    name="dateOfBirth"
-                    value={formData.dateOfBirth}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none"
-                  />
-                ) : (
-                  <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 rounded-xl">
-                    <Calendar className="w-5 h-5 text-gray-400" />
-                    <span className="text-gray-900">{new Date(formData.dateOfBirth).toLocaleDateString()}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Address */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Address
-                </label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none"
-                  />
-                ) : (
-                  <div className="px-4 py-3 bg-gray-50 rounded-xl">
-                    <span className="text-gray-900">{formData.address}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Donation Information */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Donation Information</h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Last Donation Date
-              </label>
-              <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 rounded-xl">
-                <Calendar className="w-5 h-5 text-gray-400" />
-                <span className="text-gray-900">{new Date(formData.lastDonation).toLocaleDateString()}</span>
-              </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Weight (kg)
-              </label>
-              <div className="px-4 py-3 bg-gray-50 rounded-xl">
-                <span className="text-gray-900">{formData.weight} kg</span>
-              </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Eligibility Status
-              </label>
-              <div className="px-4 py-3 bg-green-50 rounded-xl">
-                <span className="text-green-600 font-medium">Eligible in 15 days</span>
-              </div>
             </div>
           </div>
         </div>
       </div>
-    </DashboardLayout>
   );
 }

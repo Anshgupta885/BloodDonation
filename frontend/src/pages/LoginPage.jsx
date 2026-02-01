@@ -1,46 +1,64 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Droplet, Mail, Lock, ArrowRight } from 'lucide-react';
+import { Droplet, Mail, Lock, ArrowRight, AlertTriangle } from 'lucide-react';
+import axios from 'axios';
 
 export default function LoginPage({ onLogin }) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    userType: 'donor'
+    userType: 'donor',
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Mock login
-    const mockUser = {
-      name: formData.userType === 'donor' ? 'John Doe' : 
-            formData.userType === 'hospital' ? 'City Hospital' : 
-            formData.userType === 'requester' ? 'Jane Requester' : 'Admin User',
-      email: formData.email,
-      type: formData.userType,
-      bloodGroup: formData.userType === 'donor' ? 'O+' : null,
-    };
-    
-    if (onLogin) onLogin(mockUser);
-    
-    // Navigate based on user type
-    if (formData.userType === 'donor') {
-      navigate('/dashboard/donor');
-    } else if (formData.userType === 'hospital') {
-      navigate('/dashboard/hospital');
-    } else if (formData.userType === 'requester') {
-      navigate('/request-status', { state: { user: mockUser } });
-    } else {
-      navigate('/dashboard/admin');
+    setLoading(true);
+    setError('');
+
+    const { email, password, userType } = formData;
+    // Requester logs in as hospital since they use the same backend model
+    const loginType = userType === 'requester' ? 'hospital' : userType;
+    // Map to correct backend route: /api/donors/login/donor, /api/hospitals/login/hospital, /api/admins/login/admin
+    const routePrefix = loginType === 'donor' ? 'donors' : loginType === 'hospital' ? 'hospitals' : 'admins';
+    const url = `/api/${routePrefix}/login/${loginType}`;
+
+    try {
+      const response = await axios.post(url, { email, password });
+      const { token, user } = response.data;
+
+      // Store token and user info
+      localStorage.setItem('token', token);
+      
+      if (onLogin) onLogin(user, token);
+
+      // Navigate based on user type
+      switch (user.type) {
+        case 'donor':
+          navigate('/dashboard/donor');
+          break;
+        case 'hospital':
+          navigate('/dashboard/hospital');
+          break;
+        case 'admin':
+          navigate('/dashboard/admin');
+          break;
+        default:
+          navigate('/');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
@@ -87,7 +105,7 @@ export default function LoginPage({ onLogin }) {
                 Login As
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {['donor', 'hospital', 'admin', 'requester'].map((type) => (
+                {['donor', 'requester', 'hospital', 'admin'].map((type) => (
                   <button
                     key={type}
                     type="button"
@@ -142,6 +160,14 @@ export default function LoginPage({ onLogin }) {
               </div>
             </div>
 
+            {/* Error Message */}
+            {error && (
+              <div className="flex items-center gap-3 bg-red-100 p-3 rounded-xl">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            )}
+
             {/* Remember & Forgot */}
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -156,10 +182,20 @@ export default function LoginPage({ onLogin }) {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full py-4 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-all shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 flex items-center justify-center gap-2"
+              disabled={loading}
+              className="w-full py-4 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-all shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 flex items-center justify-center gap-2 disabled:bg-red-400 disabled:cursor-not-allowed"
             >
-              <span>Sign In</span>
-              <ArrowRight className="w-5 h-5" />
+              {loading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Signing in...</span>
+                </>
+              ) : (
+                <>
+                  <span>Sign In</span>
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              )}
             </button>
           </form>
 

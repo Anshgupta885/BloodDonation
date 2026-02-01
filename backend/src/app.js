@@ -21,6 +21,10 @@ const AdminRoutes = require('./routes/AdminRoutes');
 app.use('/api/admins', AdminRoutes);
 const HospitalRoutes = require('./routes/HospitalRoutes');
 app.use('/api/hospitals', HospitalRoutes);
+const RequestRoutes = require('./routes/RequestRoutes');
+app.use('/api', RequestRoutes);
+const AuthRoutes = require('./routes/AuthRoutes');
+app.use('/api/auth', AuthRoutes);
 
 // Sample route
 app.get('/', (req, res) => {

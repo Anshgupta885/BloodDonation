@@ -1,12 +1,13 @@
 const mongoose = require('mongoose');
 
 const DonorSchema = new mongoose.Schema({
-    FullName: { type: String, required: true },
-    BloodGroup: { type: String, required: true },
+    name: { type: String, required: true },
+    bloodGroup: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     phone: { type: String, required: true },
     city: { type: String, required: true },
     password: { type: String, required: true },
+    isAvailable: { type: Boolean, default: true },
  });
 
  module.exports = mongoose.model('Donor', DonorSchema);

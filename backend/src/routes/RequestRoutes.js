@@ -1,11 +1,9 @@
 const express = require('express');
-const { RegisterRequest,LoginRequest, logoutRequest, getRequestDashboard } = require('../controllers/AuthController');
-const authMiddleware = require('../middlewares/auth.middlewares');
-const Request = require('../models/Request');
 const router = express.Router();
+const { createRequest } = require('../controllers/RequestController');
+const { authMiddleware } = require('../middlewares/auth.middlewares');
+const Hospital = require('../models/Hospital');
 
-router.post('/register/request', RegisterRequest);
-router.post('/login/request', LoginRequest);
-router.get('/logout/request', logoutRequest);
-router.get('/request/dashboard', authMiddleware(Request));
+router.post('/request', authMiddleware(Hospital), createRequest);
+
 module.exports = router;

@@ -1,5 +1,4 @@
 import React from 'react';
-import DashboardLayout from './DashboardLayout';
 import { Calendar, MapPin, Building2, Droplet, Award, CheckCircle } from 'lucide-react';
 
 export default function DonationHistory({ user, onLogout }) {
@@ -20,7 +19,6 @@ export default function DonationHistory({ user, onLogout }) {
   ];
 
   return (
-    <DashboardLayout userType="donor" user={user} onLogout={onLogout}>
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Page Header */}
         <div>
@@ -136,7 +134,6 @@ export default function DonationHistory({ user, onLogout }) {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   );
 }
 

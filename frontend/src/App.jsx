@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
+import axios from 'axios';
 
 import AdminDashboard from './pages/AdminDashboard.jsx';
 import CreateRequest from './pages/CreateRequest.jsx';
@@ -17,57 +19,104 @@ import RegisterPage from './pages/RegisterPage.jsx';
 import RequestStatus from './pages/RequestStatus.jsx';
 import PublicLayout from './pages/PublicLayout.jsx';
 
-// A simple component to demonstrate a nested route if needed
-const DashboardHome = () => <div>Welcome to the dashboard!</div>;
-
 function App() {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleLogin = (loggedInUser) => {
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = jwtDecode(token);
+        // Check if token has expiration and if it's still valid (or no expiration set)
+        const isTokenValid = !decodedToken.exp || (decodedToken.exp * 1000 > Date.now());
+        if (isTokenValid) {
+          const fetchUser = async () => {
+            try {
+              // Note: The '/api/auth/me' endpoint will need to handle different user types
+              // This is a placeholder for a generic endpoint, which we may need to adjust
+              const response = await axios.get(`/api/auth/me`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              console.log('User data from /api/auth/me:', response.data);
+              setUser(response.data.user);
+            } catch (error) {
+              console.error("Failed to fetch user data", error);
+              handleLogout();
+            } finally {
+              setLoading(false);
+            }
+          };
+          fetchUser();
+        } else {
+          handleLogout();
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error("Failed to decode token", error);
+        handleLogout();
+        setLoading(false);
+      }
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleLogin = (loggedInUser, token) => {
     setUser(loggedInUser);
+    localStorage.setItem('token', token);
   };
 
   const handleLogout = () => {
     setUser(null);
+    localStorage.removeItem('token');
   };
 
+  if (loading) {
+    return <div>Loading...</div>; // Or a proper spinner component
+  }
+  
   return (
     <Router>
       <Routes>
+        {/* Public Routes */}
         <Route element={<PublicLayout />}>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/create-request" element={<CreateRequest />} />
         </Route>
         
-        {/* Example of a dashboard layout route */}
+        {/* Protected Dashboard Routes */}
         <Route 
           path="/dashboard" 
-          element={
-            <DashboardLayout 
-              user={user} 
-              userType={user?.type} 
-              onLogout={handleLogout} 
-            />
-          }
+          element={user ? <DashboardLayout user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
         >
-          <Route index element={<DashboardHome />} />
-          <Route path="admin" element={<AdminDashboard />} />
-          <Route path="hospital" element={<HospitalDashboard />} />
-          <Route path="donor" element={<DonorDashboard />} />
-          <Route path="create-request" element={<CreateRequest user={user} />} />
+          {/* Redirect to user-specific dashboard */}
+          <Route index element={
+            user ? <Navigate to={`/dashboard/${user.type}`} /> : <Navigate to="/login" />
+          } />
+          <Route path="admin" element={<AdminDashboard user={user} onLogout={handleLogout}/>} />
+          <Route path="hospital" element={<HospitalDashboard user={user} onLogout={handleLogout} />} />
+          <Route path="donor" element={<DonorDashboard user={user} onLogout={handleLogout} />} />
+          <Route path="create-request" element={<CreateRequest user={user} onLogout={handleLogout} />} />
+          {/* Nested routes for donor */}
+          <Route path="donor/history" element={<DonationHistory user={user} />} />
+          <Route path="donor/profile" element={<DonorProfile user={user} />} />
+          {/* Nested routes for admin */}
+          <Route path="admin/manage-donors" element={<ManageDonors />} />
+          <Route path="admin/manage-hospitals" element={<ManageHospitals />} />
         </Route>
-        <Route path="/history" element={<DonationHistory user={user} />} />
-        <Route path="/profile" element={<DonorProfile user={user} />} />
+
+        {/* Other protected or public routes as needed */}
         <Route path="/search" element={<DonorSearch />} />
-        <Route path="/manage-donors" element={<ManageDonors />} />
-        <Route path="/manage-hospitals" element={<ManageHospitals />} />
         <Route path="/request-status" element={<RequestStatus user={user} />} />
 
+        {/* Fallback route */}
+        <Route path="*" element={<Navigate to={user ? `/dashboard/${user.type}` : "/"} />} />
       </Routes>
     </Router>
   );
 }
 
 export default App;
+

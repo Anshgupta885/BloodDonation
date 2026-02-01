@@ -1,10 +1,11 @@
 import React from 'react';
 import { Link, useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { Droplet, LogOut, User, Home, Activity, Search, FileText, Users, Building2, Settings } from 'lucide-react';
+import { Droplet, LogOut, User, Home, Activity, Search, FileText, Users, Building2 } from 'lucide-react';
 
-export default function DashboardLayout({ userType, user, onLogout }) {
+export default function DashboardLayout({ user, onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const userType = user?.type;
 
   const handleLogout = () => {
     if (onLogout) onLogout();
@@ -13,8 +14,8 @@ export default function DashboardLayout({ userType, user, onLogout }) {
 
   const getDonorNavItems = () => [
     { path: '/dashboard/donor', icon: Home, label: 'Dashboard' },
-    { path: '/profile', icon: User, label: 'Profile' },
-    { path: '/history', icon: Activity, label: 'Donation History' },
+    { path: '/dashboard/donor/profile', icon: User, label: 'Profile' },
+    { path: '/dashboard/donor/history', icon: Activity, label: 'Donation History' },
   ];
 
   const getHospitalNavItems = () => [
@@ -26,8 +27,8 @@ export default function DashboardLayout({ userType, user, onLogout }) {
 
   const getAdminNavItems = () => [
     { path: '/dashboard/admin', icon: Home, label: 'Dashboard' },
-    { path: '/manage-donors', icon: Users, label: 'Manage Donors' },
-    { path: '/manage-hospitals', icon: Building2, label: 'Manage Hospitals' },
+    { path: '/dashboard/admin/manage-donors', icon: Users, label: 'Manage Donors' },
+    { path: '/dashboard/admin/manage-hospitals', icon: Building2, label: 'Manage Hospitals' },
   ];
 
   const navItems = 
@@ -53,7 +54,7 @@ export default function DashboardLayout({ userType, user, onLogout }) {
             
             <div className="flex items-center gap-4">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-medium text-gray-900">{user?.name || 'User'}</p>
+                <p className="text-sm font-medium text-gray-900">{user?.name || user?.HospitalName || 'User'}</p>
                 <p className="text-xs text-gray-500">{user?.email || 'user@example.com'}</p>
               </div>
               <button

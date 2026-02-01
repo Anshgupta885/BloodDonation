@@ -1,48 +1,38 @@
-import React from 'react';
-import { Link } from 'react-router';
-import DashboardLayout from './DashboardLayout';
-import { Users, Building2, Droplet, Activity, TrendingUp, AlertCircle } from 'lucide-react';
-import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Users, Building2, Droplet, Activity, TrendingUp, AlertCircle, Loader } from 'lucide-react';
+import { AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import axios from 'axios';
 
 export default function AdminDashboard({ user, onLogout }) {
-  const stats = [
-    { label: 'Total Donors', value: '50,234', icon: Users, color: 'blue', change: '+12%' },
-    { label: 'Total Hospitals', value: '523', icon: Building2, color: 'purple', change: '+5%' },
-    { label: 'Blood Requests', value: '1,456', icon: Activity, color: 'orange', change: '+8%' },
-    { label: 'Units Donated', value: '8,943', icon: Droplet, color: 'red', change: '+15%' },
-  ];
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // Monthly donations data
-  const monthlyData = [
-    { month: 'Jan', donations: 650 },
-    { month: 'Feb', donations: 720 },
-    { month: 'Mar', donations: 680 },
-    { month: 'Apr', donations: 790 },
-    { month: 'May', donations: 850 },
-    { month: 'Jun', donations: 920 },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setError('Authentication token not found. Please login again.');
+          return;
+        }
 
-  // Blood group distribution
-  const bloodGroupData = [
-    { name: 'O+', value: 38 },
-    { name: 'A+', value: 28 },
-    { name: 'B+', value: 15 },
-    { name: 'AB+', value: 8 },
-    { name: 'O-', value: 5 },
-    { name: 'A-', value: 3 },
-    { name: 'B-', value: 2 },
-    { name: 'AB-', value: 1 },
-  ];
+        const response = await axios.get('/api/admins/admin/dashboard', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setDashboardData(response.data);
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to fetch dashboard data.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const COLORS = ['#DC2626', '#F97316', '#EAB308', '#22C55E', '#3B82F6', '#8B5CF6', '#EC4899', '#6B7280'];
-
-  // Recent activities
-  const recentActivities = [
-    { id: 1, type: 'donor', message: 'New donor registered: John Smith', time: '5 mins ago', status: 'success' },
-    { id: 2, type: 'hospital', message: 'City Hospital created urgent blood request', time: '15 mins ago', status: 'warning' },
-    { id: 3, type: 'donation', message: 'Donation completed at Memorial Hospital', time: '1 hour ago', status: 'success' },
-    { id: 4, type: 'hospital', message: 'New hospital verified: St. Mary Medical Center', time: '2 hours ago', status: 'info' },
-  ];
+    fetchData();
+  }, []);
 
   const getActivityIcon = (type) => {
     switch (type) {
@@ -62,18 +52,44 @@ export default function AdminDashboard({ user, onLogout }) {
     }
   };
 
+  if (loading) {
+    return (
+        <div className="flex justify-center items-center h-full">
+          <Loader className="w-12 h-12 animate-spin text-red-600" />
+        </div>
+    );
+  }
+
+  if (error) {
+    return (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg" role="alert">
+          <strong className="font-bold">Error:</strong>
+          <span className="block sm:inline"> {error}</span>
+        </div>
+    );
+  }
+
+  if (!dashboardData) return null;
+
+  const { stats, monthlyData, bloodGroupData, recentActivities } = dashboardData;
+  const statItems = [
+    { label: 'Total Donors', value: stats.totalDonors, icon: Users, color: 'blue' },
+    { label: 'Total Hospitals', value: stats.totalHospitals, icon: Building2, color: 'purple' },
+    { label: 'Blood Requests', value: stats.totalRequests, icon: Activity, color: 'orange' },
+    { label: 'Units Donated', value: stats.totalUnitsDonated, icon: Droplet, color: 'red' },
+  ];
+
+  const COLORS = ['#DC2626', '#F97316', '#EAB308', '#22C55E', '#3B82F6', '#8B5CF6', '#EC4899', '#6B7280'];
+
   return (
-    <DashboardLayout userType="admin" user={user} onLogout={onLogout}>
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Page Header */}
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
           <p className="text-gray-600 mt-1">System overview and analytics</p>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat, index) => {
+          {statItems.map((stat, index) => {
             const Icon = stat.icon;
             return (
               <div key={index} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
@@ -81,10 +97,10 @@ export default function AdminDashboard({ user, onLogout }) {
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-${stat.color}-100`}>
                     <Icon className={`w-6 h-6 text-${stat.color}-600`} />
                   </div>
-                  <span className="flex items-center gap-1 text-sm text-green-600 font-medium">
+                  {/* <span className="flex items-center gap-1 text-sm text-green-600 font-medium">
                     <TrendingUp className="w-4 h-4" />
                     {stat.change}
-                  </span>
+                  </span> */}
                 </div>
                 <h3 className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</h3>
                 <p className="text-sm text-gray-600">{stat.label}</p>
@@ -93,9 +109,7 @@ export default function AdminDashboard({ user, onLogout }) {
           })}
         </div>
 
-        {/* Charts Row */}
         <div className="grid lg:grid-cols-2 gap-6">
-          {/* Monthly Donations Chart */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-6">Monthly Donations</h2>
             <ResponsiveContainer width="100%" height={300}>
@@ -115,7 +129,6 @@ export default function AdminDashboard({ user, onLogout }) {
             </ResponsiveContainer>
           </div>
 
-          {/* Blood Group Distribution */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-6">Blood Group Distribution</h2>
             <ResponsiveContainer width="100%" height={300}>
@@ -139,10 +152,8 @@ export default function AdminDashboard({ user, onLogout }) {
             </ResponsiveContainer>
           </div>
         </div>
-
-        {/* Recent Activities and Quick Actions */}
+        
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Recent Activities */}
           <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-200">
             <div className="p-6 border-b border-gray-200">
               <h2 className="text-xl font-bold text-gray-900">Recent Activities</h2>
@@ -167,7 +178,6 @@ export default function AdminDashboard({ user, onLogout }) {
             </div>
           </div>
 
-          {/* Quick Actions */}
           <div className="space-y-4">
             <Link
               to="/admin/manage-donors"
@@ -189,13 +199,12 @@ export default function AdminDashboard({ user, onLogout }) {
           </div>
         </div>
 
-        {/* System Alerts */}
         <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6">
           <div className="flex items-start gap-4">
             <AlertCircle className="w-6 h-6 text-orange-600 flex-shrink-0 mt-1" />
             <div>
               <h3 className="font-medium text-orange-900 mb-1">System Notice</h3>
-              <p className="text-orange-700 mb-3">Scheduled maintenance on January 25, 2026 from 2:00 AM to 4:00 AM EST.</p>
+              <p className="text-orange-700 mb-3">Scheduled maintenance on January 31, 2026 from 2:00 AM to 4:00 AM EST.</p>
               <button className="px-4 py-2 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium">
                 View Details
               </button>
@@ -203,6 +212,5 @@ export default function AdminDashboard({ user, onLogout }) {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   );
 }
