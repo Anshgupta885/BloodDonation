@@ -19,11 +19,13 @@ export default function LoginPage({ onLogin }) {
     setError('');
 
     const { email, password, userType } = formData;
-    // Requester logs in as hospital since they use the same backend model
-    const loginType = userType === 'requester' ? 'hospital' : userType;
-    // Map to correct backend route: /api/donors/login/donor, /api/hospitals/login/hospital, /api/admins/login/admin
-    const routePrefix = loginType === 'donor' ? 'donors' : loginType === 'hospital' ? 'hospitals' : 'admins';
-    const url = `/api/${routePrefix}/login/${loginType}`;
+    let url;
+    if (userType === 'requester') {
+      url = '/api/requesters/login';
+    } else {
+      const routePrefix = userType === 'donor' ? 'donors' : userType === 'hospital' ? 'hospitals' : 'admins';
+      url = `/api/${routePrefix}/login/${userType}`;
+    }
 
     try {
       const response = await axios.post(url, { email, password });
@@ -44,6 +46,9 @@ export default function LoginPage({ onLogin }) {
           break;
         case 'admin':
           navigate('/dashboard/admin');
+          break;
+        case 'requester':
+          navigate('/dashboard/requester'); // Or wherever requesters should go
           break;
         default:
           navigate('/');

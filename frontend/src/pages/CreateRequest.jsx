@@ -56,7 +56,7 @@ export default function CreateRequest({ user, onLogout }) {
 
       setSuccess('Request created successfully! Redirecting...');
       setTimeout(() => {
-        navigate('/dashboard/hospital');
+        navigate(`/dashboard/${user.type}`);
       }, 2000);
 
     } catch (err) {
@@ -187,7 +187,7 @@ export default function CreateRequest({ user, onLogout }) {
               {loading ? <Loader className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
               {loading ? 'Submitting...' : 'Submit Request'}
             </button>
-            <button type="button" onClick={() => navigate(user ? '/dashboard/hospital' : '/')} className="px-6 py-4 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium">
+            <button type="button" onClick={() => navigate(user ? `/dashboard/${user.type}` : '/')} className="px-6 py-4 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium">
               Cancel
             </button>
           </div>

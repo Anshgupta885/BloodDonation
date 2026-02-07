@@ -10,7 +10,8 @@ const RequestSchema = new mongoose.Schema({
     purpose: { type: String, required: true },
     contactName: { type: String, required: true },
     contactPhone: { type: String, required: true },
-    hospital: { type: mongoose.Schema.Types.ObjectId, ref: 'Hospital', required: true },
+    requester: { type: mongoose.Schema.Types.ObjectId, required: true, refPath: 'requesterModel' },
+    requesterModel: { type: String, required: true, enum: ['Hospital', 'Requester'] },
     donor: { type: mongoose.Schema.Types.ObjectId, ref: 'Donor' },
     status: { type: String, enum: ['pending', 'fulfilled'], default: 'pending' },
  }, { timestamps: true });

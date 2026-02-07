@@ -2,11 +2,13 @@ const jwt = require('jsonwebtoken');
 const Donor = require('../models/Donor');
 const Hospital = require('../models/Hospital');
 const Admin = require('../models/Admin');
+const Requester = require('../models/Requester');
 
 const models = {
     donor: Donor,
     hospital: Hospital,
     admin: Admin,
+    requester: Requester,
 };
 
 const multiTypeAuthMiddleware = async (req, res, next) => {

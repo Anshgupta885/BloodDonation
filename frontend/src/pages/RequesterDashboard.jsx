@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, CheckCircle, Clock, Droplet, Users, FileText, TrendingUp, Loader } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Clock, Droplet, Users, FileText, TrendingUp, Loader, Edit } from 'lucide-react';
 import axios from 'axios';
 import { formatDistanceToNow } from 'date-fns';
 
-export default function HospitalDashboard({ user, onLogout }) {
+export default function RequesterDashboard({ user, onLogout }) {
   const [dashboardData, setDashboardData] = useState(null);
-  const [profileData, setProfileData] = useState(null);
+  const [requesterData, setRequesterData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -24,7 +24,7 @@ export default function HospitalDashboard({ user, onLogout }) {
           axios.get('/api/auth/profile', { headers: { Authorization: `Bearer ${token}` } })
         ]);
         setDashboardData(dashboardResponse.data);
-        setProfileData(profileResponse.data.user);
+        setRequesterData(profileResponse.data.user);
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to fetch dashboard data.');
       } finally {
@@ -57,7 +57,7 @@ export default function HospitalDashboard({ user, onLogout }) {
     );
   }
 
-  if (!dashboardData || !profileData) return null;
+  if (!dashboardData || !requesterData) return null;
 
   const { stats, activeRequests, fulfilledRequests } = dashboardData;
   const statItems = [
@@ -71,16 +71,35 @@ export default function HospitalDashboard({ user, onLogout }) {
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{profileData.HospitalName}</h1>
-            <p className="text-gray-600 mt-1">Manage blood requests and inventory</p>
+            <h1 className="text-3xl font-bold text-gray-900">{requesterData.name}</h1>
+            <p className="text-gray-600 mt-1">Manage your blood requests and details</p>
           </div>
-          <Link
-            to="/create-request"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium shadow-lg shadow-red-500/25"
-          >
-            <FileText className="w-5 h-5" />
-            Create New Request
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              to="/dashboard/create-request"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium shadow-lg shadow-red-500/25"
+            >
+              <FileText className="w-5 h-5" />
+              Create New Request
+            </Link>
+            <Link
+              to="/dashboard/requester/update"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium shadow-lg shadow-blue-500/25"
+            >
+              <Edit className="w-5 h-5" />
+              Update Details
+            </Link>
+          </div>
+        </div>
+        
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Requester Details</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div><strong>Email:</strong> {requesterData.email}</div>
+            <div><strong>Phone:</strong> {requesterData.phone}</div>
+            <div><strong>City:</strong> {requesterData.city}</div>
+            <div><strong>Address:</strong> {requesterData.address}</div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

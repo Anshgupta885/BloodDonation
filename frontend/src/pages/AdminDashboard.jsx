@@ -20,7 +20,7 @@ export default function AdminDashboard({ user, onLogout }) {
           return;
         }
 
-        const response = await axios.get('/api/admins/admin/dashboard', {
+        const response = await axios.get('/api/admins/dashboard', {
           headers: { Authorization: `Bearer ${token}` },
         });
         setDashboardData(response.data);

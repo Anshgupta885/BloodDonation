@@ -8,11 +8,11 @@ const Donor = require('../models/Donor');
 router.post('/register/donor', registerDonor);
 router.post('/login/donor', loginDonor);
 router.get('/logout/donor', logoutDonor);
-router.get('/donor/dashboard', authMiddleware(Donor), getDonorDashboard);
-router.post('/donor/availability', authMiddleware(Donor), toggleDonorAvailability);
+router.get('/dashboard', authMiddleware(Donor), getDonorDashboard);
+router.post('/availability', authMiddleware(Donor), toggleDonorAvailability);
 
 // Profile routes
-router.get('/donor/profile', authMiddleware(Donor), async (req, res) => {
+router.get('/profile', authMiddleware(Donor), async (req, res) => {
     try {
         const donor = await Donor.findById(req.user._id).select('-password');
         if (!donor) {
@@ -24,6 +24,6 @@ router.get('/donor/profile', authMiddleware(Donor), async (req, res) => {
     }
 });
 
-router.put('/donor/profile', updateDonorDetails);
+router.put('/profile', updateDonorDetails);
 
 module.exports = router;

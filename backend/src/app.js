@@ -21,6 +21,8 @@ const AdminRoutes = require('./routes/AdminRoutes');
 app.use('/api/admins', AdminRoutes);
 const HospitalRoutes = require('./routes/HospitalRoutes');
 app.use('/api/hospitals', HospitalRoutes);
+const RequesterRoutes = require('./routes/RequesterRoutes');
+app.use('/api/requesters', RequesterRoutes);
 const RequestRoutes = require('./routes/RequestRoutes');
 app.use('/api', RequestRoutes);
 const AuthRoutes = require('./routes/AuthRoutes');

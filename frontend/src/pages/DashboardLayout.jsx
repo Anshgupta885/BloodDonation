@@ -20,8 +20,15 @@ export default function DashboardLayout({ user, onLogout }) {
 
   const getHospitalNavItems = () => [
     { path: '/dashboard/hospital', icon: Home, label: 'Dashboard' },
+    { path: '/dashboard/hospital/profile', icon: User, label: 'Profile' },
     { path: '/dashboard/create-request', icon: FileText, label: 'Create Request' },
     { path: '/search', icon: Search, label: 'Search Donors' },
+    { path: '/request-status', icon: Activity, label: 'Request Status' },
+  ];
+
+  const getRequesterNavItems = () => [
+    { path: '/dashboard/requester', icon: Home, label: 'Dashboard' },
+    { path: '/dashboard/create-request', icon: FileText, label: 'Create Request' },
     { path: '/request-status', icon: Activity, label: 'Request Status' },
   ];
 
@@ -34,6 +41,7 @@ export default function DashboardLayout({ user, onLogout }) {
   const navItems = 
     userType === 'donor' ? getDonorNavItems() :
     userType === 'hospital' ? getHospitalNavItems() :
+    userType === 'requester' ? getRequesterNavItems() :
     userType === 'admin' ? getAdminNavItems() : [];
 
   return (

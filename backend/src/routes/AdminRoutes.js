@@ -8,6 +8,6 @@ const Admin = require('../models/Admin');
 router.post('/register/admin', registerAdmin);
 router.post('/login/admin', LoginAdmin);
 router.get('/logout/admin', logoutAdmin);
-router.get('/admin/dashboard', authMiddleware(Admin), getAdminDashboard);
+router.get('/dashboard', authMiddleware(Admin), getAdminDashboard);
 
 module.exports = router;

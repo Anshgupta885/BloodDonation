@@ -16,8 +16,11 @@ import LoginPage from './pages/LoginPage.jsx';
 import ManageDonors from './pages/ManageDonors.jsx';
 import ManageHospitals from './pages/ManageHospitals.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
+import RequesterDashboard from './pages/RequesterDashboard.jsx';
 import RequestStatus from './pages/RequestStatus.jsx';
 import PublicLayout from './pages/PublicLayout.jsx';
+import UpdateRequesterPage from './pages/UpdateRequesterPage.jsx';
+import HospitalProfile from './pages/HospitalProfile.jsx';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -97,7 +100,10 @@ function App() {
           } />
           <Route path="admin" element={<AdminDashboard user={user} onLogout={handleLogout}/>} />
           <Route path="hospital" element={<HospitalDashboard user={user} onLogout={handleLogout} />} />
+          <Route path="hospital/profile" element={<HospitalProfile />} />
           <Route path="donor" element={<DonorDashboard user={user} onLogout={handleLogout} />} />
+          <Route path="requester" element={<RequesterDashboard user={user} onLogout={handleLogout} />} />
+          <Route path="requester/update" element={<UpdateRequesterPage user={user} />} />
           <Route path="create-request" element={<CreateRequest user={user} onLogout={handleLogout} />} />
           {/* Nested routes for donor */}
           <Route path="donor/history" element={<DonationHistory user={user} />} />

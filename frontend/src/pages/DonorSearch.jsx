@@ -138,7 +138,7 @@ export default function DonorSearch({ user, onLogout }) {
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                       <div className="flex gap-4 flex-1">
                         {/* Avatar */}
-                        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
+                        <div className="w-16 h-16 rounded-xl bg-linear-to-br from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
                           <User className="w-8 h-8 text-white" />
                         </div>
                         

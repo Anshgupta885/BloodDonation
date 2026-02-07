@@ -1,6 +1,6 @@
 const donor=require('../models/Donor');
 const Hospital=require('../models/Hospital');
-const Requester=require('../models/Request');
+const Requester=require('../models/Requester');
 const admin=require('../models/Admin');
 const jwt=require('jsonwebtoken');
 
@@ -27,9 +27,9 @@ async function updateDonorDetails(req,res){
         const token=req.headers.authorization.split(' ')[1];
         const decoded=jwt.verify(token,process.env.JWT_SECRET_KEY);
         const hospitalId=decoded.id;
-        const {name,phone,address}=req.body;
+        const {HospitalName,phone,address, City}=req.body;
         const updatedHospital=await Hospital.findByIdAndUpdate(hospitalId,
-            {name,phone,address},
+            {HospitalName,phone,address, City},
             {new:true}
         ).select('-password');  
         if(!updatedHospital){
@@ -49,7 +49,7 @@ async function updateDonorDetails(req,res){
         const updatedRequester=await Requester.findByIdAndUpdate(requesterId,
             {name,phone,address},
             {new:true}
-        ).select('-password');
+        ).select('-passwordHash');
         if(!updatedRequester){
             return res.status(404).json({message:'Requester not found'});
         }

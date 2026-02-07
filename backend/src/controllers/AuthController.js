@@ -2,6 +2,8 @@ const Donor = require('../models/Donor');
 const Hospital = require('../models/Hospital');
 const Request = require('../models/Request');
 const Admin = require('../models/Admin');
+const Requester = require('../models/Requester');
+const request = require('../models/Request');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
@@ -87,29 +89,46 @@ async function loginHospital(req, res) {
     res.status(200).json({ message: "Login successful", token, user });
 }
 
+async function loginRequester(req, res) {
+    const { email, password } = req.body;
+    const requester = await Requester.findOne({ email: email });
+    if (!requester) {
+        return res.status(400).json({ message: "Invalid email or password" });
+    }
+    const isPasswordValid = await bcrypt.compare(password, requester.passwordHash);
+    if (!isPasswordValid) {
+        return res.status(400).json({ message: "Invalid email or password" });
+    }
+    const token = jwt.sign({ id: requester._id, type: 'requester' }, process.env.JWT_SECRET_KEY, { expiresIn: '7d' });
+    const user = { id: requester._id, name: requester.name, email: requester.email, type: 'requester' };
+    res.status(200).json({ message: "Login successful", token, user });
+}
+
 async function logoutHospital(req, res){
     res.status(200).json({message:"Logged out successfully"});
 }
 
 
-async function createRequest(req, res) {
-    const { bloodGroup, units, urgency, patientName, city, byDate, purpose, contactName, contactPhone } = req.body;
-    const newRequest = new Request({
-        bloodGroup,
-        units,
-        urgency,
-        patientName,
+async function createRequester(req, res) {
+   const {name,email,phone,city,address,password} = req.body;
+    const useralreadyexists=await Requester.findOne({email:email});
+    if(useralreadyexists){
+        return res.status(400).json({message:"User already exists"});
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newRequester = new Requester({
+        name,
+        email,
+        phone,
         city,
-        byDate,
-        purpose,
-        contactName,
-        contactPhone,
-        hospital: req.user.id,
+        address,
+        passwordHash: hashedPassword
     });
-    await newRequest.save();
-    res.status(201).json({ message: "Request created successfully" });
+    await newRequester.save();
+    res.status(201).json({ message: "Requester created successfully" });
 }
-
+       
+  
 async function registerAdmin(req, res) {
     const { email, password, secretKey } = req.body;
     
@@ -193,15 +212,15 @@ async function toggleDonorAvailability(req, res) {
 
 async function getHospitalDashboard(req, res) {
     try {
-        const hospitalId = req.user.id;
+        const userId = req.user.id;
         const today = new Date();
 
-        const activeRequests = await Request.find({ hospital: hospitalId, status: 'pending' }).sort({ createdAt: -1 });
-        const fulfilledRequests = await Request.find({ hospital: hospitalId, status: 'fulfilled' }).populate('donor', 'name').sort({ updatedAt: -1 });
+        const activeRequests = await Request.find({ requester: userId, status: 'pending' }).sort({ createdAt: -1 });
+        const fulfilledRequests = await Request.find({ requester: userId, status: 'fulfilled' }).populate('donor', 'name').sort({ updatedAt: -1 });
 
         const stats = {
             activeRequests: activeRequests.length,
-            fulfilledToday: await Request.countDocuments({ hospital: hospitalId, status: 'fulfilled', updatedAt: { $gte: startOfDay(today), $lte: endOfDay(today) } }),
+            fulfilledToday: await Request.countDocuments({ requester: userId, status: 'fulfilled', updatedAt: { $gte: startOfDay(today), $lte: endOfDay(today) } }),
             totalDonors: 156, // Mock
             unitsCollected: fulfilledRequests.reduce((acc, req) => acc + req.units, 0),
         };
@@ -278,6 +297,10 @@ async function getMe(req, res) {
     res.status(200).json({ user });
 }
 
+async function getProfile(req, res) {
+    res.status(200).json({ user: req.user });
+}
+
 module.exports = {
     registerDonor,
     loginDonor,
@@ -285,7 +308,8 @@ module.exports = {
     registerHospital,
     loginHospital,
     logoutHospital,
-    createRequest,
+    createRequester,
+    loginRequester,
     registerAdmin,
     LoginAdmin,
     logoutAdmin,
@@ -293,5 +317,6 @@ module.exports = {
     toggleDonorAvailability,
     getHospitalDashboard,
     getAdminDashboard,
-    getMe
+    getMe,
+    getProfile
 };

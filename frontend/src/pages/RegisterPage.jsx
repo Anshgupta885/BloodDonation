@@ -37,8 +37,6 @@ export default function RegisterPage() {
     setError('');
     setSuccess('');
 
-    // Requester registers as hospital since hospitals create blood requests
-    const isHospitalOrRequester = userType === 'hospital' || userType === 'requester';
     let url;
     let payload;
 
@@ -59,8 +57,18 @@ export default function RegisterPage() {
         bloodGroup: formData.bloodGroup,
         city: formData.city,
       };
-    } else { // hospital or requester
-      url = '/api/hospitals/register/hospital';
+    } else if (userType === 'requester') {
+      url = '/api/requesters/register';
+      payload = {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+      };
+    } else { // hospital
+      url = '/api/hospitals/register';
       payload = {
         name: formData.name,
         email: formData.email,

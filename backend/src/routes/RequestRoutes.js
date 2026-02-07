@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { createRequest } = require('../controllers/RequestController');
-const { authMiddleware } = require('../middlewares/auth.middlewares');
-const Hospital = require('../models/Hospital');
+const { multiTypeAuthMiddleware } = require('../middlewares/auth.middlewares');
 
-router.post('/request', authMiddleware(Hospital), createRequest);
+router.post('/request', multiTypeAuthMiddleware, createRequest);
 
 module.exports = router;

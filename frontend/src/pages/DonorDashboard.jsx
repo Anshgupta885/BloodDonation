@@ -17,7 +17,7 @@ export default function DonorDashboard({ user, onLogout }) {
           setError('Authentication token not found.');
           return;
         }
-        const response = await axios.get('/api/donors/donor/dashboard', {
+        const response = await axios.get('/api/donors/dashboard', {
           headers: { Authorization: `Bearer ${token}` },
         });
         setDashboardData(response.data);
@@ -36,7 +36,7 @@ export default function DonorDashboard({ user, onLogout }) {
     setIsAvailable(!isAvailable); // Optimistic update
     try {
       const token = localStorage.getItem('token');
-      await axios.post('/api/donors/donor/availability', {}, {
+      await axios.post('/api/donors/availability', {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
     } catch (err) {

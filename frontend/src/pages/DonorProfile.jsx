@@ -22,7 +22,7 @@ export default function DonorProfile({ user, onLogout }) {
   const fetchProfile = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/donors/donor/profile', {
+const response = await axios.get('/api/donors/profile', {
         headers: { Authorization: `Bearer ${token}` }
       });
       const donor = response.data.donor;
@@ -53,7 +53,7 @@ export default function DonorProfile({ user, onLogout }) {
     setError('');
     try {
       const token = localStorage.getItem('token');
-      await axios.put('/api/donors/donor/profile', formData, {
+await axios.put('/api/donors/profile', formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setIsEditing(false);
@@ -69,7 +69,7 @@ export default function DonorProfile({ user, onLogout }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-100">
         <Loader2 className="w-8 h-8 text-red-600 animate-spin" />
       </div>
     );
@@ -114,7 +114,7 @@ export default function DonorProfile({ user, onLogout }) {
         {/* Profile Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
           {/* Header with Background */}
-          <div className="h-32 bg-gradient-to-br from-red-500 to-red-600 relative">
+          <div className="h-32 bg-linear-to-br from-red-500 to-red-600 relative">
             <div className="absolute -bottom-12 left-6">
               <div className="w-24 h-24 rounded-2xl bg-white border-4 border-white shadow-lg flex items-center justify-center">
                 <User className="w-12 h-12 text-red-600" />

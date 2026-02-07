@@ -2,16 +2,17 @@ const express = require('express');
 const router = express.Router();
 const { registerHospital, loginHospital, logoutHospital, getHospitalDashboard } = require('../controllers/AuthController');
 const { updateHospitalDetails } = require('../controllers/updateDetails.Controller');
-const { authMiddleware } = require('../middlewares/auth.middlewares');
+const { multiTypeAuthMiddleware } = require('../middlewares/auth.middlewares');
 const Hospital = require('../models/Hospital');
 
-router.post('/register/hospital', registerHospital);
+router.post('/register', registerHospital);
 router.post('/login/hospital', loginHospital);
 router.get('/logout/hospital', logoutHospital);
-router.get('/hospital/dashboard', authMiddleware(Hospital), getHospitalDashboard);
+router.get('/dashboard', multiTypeAuthMiddleware, getHospitalDashboard);
+
 
 // Profile routes
-router.get('/hospital/profile', authMiddleware(Hospital), async (req, res) => {
+router.get('/profile', multiTypeAuthMiddleware, async (req, res) => {
     try {
         const hospital = await Hospital.findById(req.user._id).select('-password');
         if (!hospital) {
@@ -23,6 +24,6 @@ router.get('/hospital/profile', authMiddleware(Hospital), async (req, res) => {
     }
 });
 
-router.put('/hospital/profile', updateHospitalDetails);
+router.put('/profile', updateHospitalDetails);
 
 module.exports = router;
