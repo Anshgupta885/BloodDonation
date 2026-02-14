@@ -1,64 +1,78 @@
-import React, { useState } from 'react';
-import { useLocation } from 'react-router';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Clock, CheckCircle, XCircle, AlertCircle, Droplet, Calendar, Users } from 'lucide-react';
+import axios from 'axios';
 
 export default function RequestStatus({ user: propUser, onLogout }) {
   const location = useLocation();
   const user = propUser || location.state?.user;
-  const userType = user?.type || 'hospital';
+  const userType = user?.type || 'requester'; // Default to 'requester' if not specified
   const [activeTab, setActiveTab] = useState('all');
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(''); // For displaying success messages
 
-  const requests = [
-    {
-      id: 1,
-      bloodGroup: 'O+',
-      units: 2,
-      urgency: 'Critical',
-      status: 'Active',
-      createdAt: '2026-01-23',
-      requiredBy: '2026-01-24',
-      patientName: 'Alice Johnson',
-      responses: 5,
-      fulfilled: 0,
-    },
-    {
-      id: 2,
-      bloodGroup: 'A-',
-      units: 1,
-      urgency: 'Urgent',
-      status: 'Active',
-      createdAt: '2026-01-22',
-      requiredBy: '2026-01-25',
-      patientName: 'Bob Smith',
-      responses: 3,
-      fulfilled: 0,
-    },
-    {
-      id: 3,
-      bloodGroup: 'AB+',
-      units: 1,
-      urgency: 'Moderate',
-      status: 'Fulfilled',
-      createdAt: '2026-01-20',
-      requiredBy: '2026-01-23',
-      patientName: 'Carol Williams',
-      responses: 2,
-      fulfilled: 1,
-      donorName: 'John Doe',
-    },
-    {
-      id: 4,
-      bloodGroup: 'B+',
-      units: 3,
-      urgency: 'Moderate',
-      status: 'Cancelled',
-      createdAt: '2026-01-19',
-      requiredBy: '2026-01-22',
-      patientName: 'David Brown',
-      responses: 0,
-      fulfilled: 0,
-    },
-  ];
+  useEffect(() => {
+    const fetchRequests = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No authentication token found.');
+        }
+
+        const response = await fetch('http://localhost:5000/api/requests/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setRequests(data);
+      } catch (e) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user && (user.type === 'requester' || user.type === 'hospital')) {
+      fetchRequests();
+    } else {
+      setLoading(false);
+      setError('User not authorized to view this page or user type not recognized.');
+    }
+  }, [user]);
+
+  const handleDeleteRequest = async (requestId) => {
+    if (window.confirm('Are you sure you want to cancel this request? This action cannot be undone.')) {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setError('Authentication token not found.');
+          return;
+        }
+
+        await axios.delete(`http://localhost:5000/api/requests/${requestId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        // Update requests state to remove the deleted request
+        setRequests(prevRequests => prevRequests.filter(req => req._id !== requestId));
+        setSuccessMessage('Request cancelled successfully!'); // Set success message
+        // Clear error message if any
+        setError(null);
+
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to cancel request.');
+        setSuccessMessage(''); // Clear success message if there's an error
+      }
+    }
+  };
 
   const tabs = [
     { id: 'all', label: 'All Requests', count: requests.length },
@@ -93,6 +107,14 @@ export default function RequestStatus({ user: propUser, onLogout }) {
     }
   };
 
+  if (loading) {
+    return <div className="text-center py-8">Loading requests...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center py-8 text-red-500">Error: {error}</div>;
+  }
+
     return (
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Page Header */}
@@ -100,6 +122,11 @@ export default function RequestStatus({ user: propUser, onLogout }) {
             <h1 className="text-3xl font-bold text-gray-900">Request Status</h1>
             <p className="text-gray-600 mt-1">Track and manage your blood requests</p>
           </div>
+        {successMessage && (
+            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg" role="alert">
+              {successMessage}
+            </div>
+          )}
   
           {/* Tabs */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-2">
@@ -165,7 +192,7 @@ export default function RequestStatus({ user: propUser, onLogout }) {
                 const StatusIcon = statusConfig.icon;
                 
                 return (
-                  <div key={request.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                  <div key={request._id} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
                     <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                       <div className="flex-1">
                         {/* Header */}
@@ -177,7 +204,7 @@ export default function RequestStatus({ user: propUser, onLogout }) {
                           <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getUrgencyColor(request.urgency)}`}>
                             {request.urgency}
                           </span>
-                          <span className="text-sm text-gray-500">Request #{request.id}</span>
+                          <span className="text-sm text-gray-500">Request #{request._id}</span>
                         </div>
                         
                         {/* Details Grid */}
@@ -209,7 +236,7 @@ export default function RequestStatus({ user: propUser, onLogout }) {
                             <p className="text-xs text-gray-500 mb-1">Required By</p>
                             <div className="flex items-center gap-2 text-gray-600">
                               <Calendar className="w-4 h-4" />
-                              <span>{new Date(request.requiredBy).toLocaleDateString()}</span>
+                              <span>{new Date(request.byDate).toLocaleDateString()}</span>
                             </div>
                           </div>
                           
@@ -217,11 +244,11 @@ export default function RequestStatus({ user: propUser, onLogout }) {
                             <p className="text-xs text-gray-500 mb-1">Responses</p>
                             <div className="flex items-center gap-2">
                               <Users className="w-4 h-4 text-blue-600" />
-                              <span className="font-medium text-blue-600">{request.responses} donors</span>
+                              <span className="font-medium text-blue-600">{request.responses ? request.responses.length : 0} donors</span>
                             </div>
                           </div>
                           
-                          {request.status === 'Fulfilled' && (
+                          {request.status === 'Fulfilled' && request.donorName && (
                             <div>
                               <p className="text-xs text-gray-500 mb-1">Donor</p>
                               <p className="font-medium text-green-600">{request.donorName}</p>
@@ -233,13 +260,13 @@ export default function RequestStatus({ user: propUser, onLogout }) {
                         {request.status === 'Active' && (
                           <div>
                             <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
-                              <span>Progress: {request.fulfilled}/{request.units} units fulfilled</span>
-                              <span>{Math.round((request.fulfilled / request.units) * 100)}%</span>
+                              <span>Progress: {request.fulfilledUnits}/{request.units} units fulfilled</span>
+                              <span>{Math.round((request.fulfilledUnits / request.units) * 100)}%</span>
                             </div>
                             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                               <div 
                                 className="h-full bg-red-600 transition-all"
-                                style={{ width: `${(request.fulfilled / request.units) * 100}%` }}
+                                style={{ width: `${(request.fulfilledUnits / request.units) * 100}%` }}
                               />
                             </div>
                           </div>
@@ -253,7 +280,10 @@ export default function RequestStatus({ user: propUser, onLogout }) {
                             <button className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium whitespace-nowrap">
                               View Responses
                             </button>
-                            <button className="px-4 py-2 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors font-medium whitespace-nowrap">
+                            <button 
+                                onClick={() => handleDeleteRequest(request._id)}
+                                className="px-4 py-2 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors font-medium whitespace-nowrap"
+                            >
                               Cancel
                             </button>
                           </>
@@ -277,4 +307,5 @@ export default function RequestStatus({ user: propUser, onLogout }) {
             )}
           </div>
         </div>
-    );}
+    );
+}

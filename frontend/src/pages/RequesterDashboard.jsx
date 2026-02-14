@@ -20,7 +20,7 @@ export default function RequesterDashboard({ user, onLogout }) {
           return;
         }
         const [dashboardResponse, profileResponse] = await Promise.all([
-          axios.get('/api/hospitals/dashboard', { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get('/api/requesters/dashboard', { headers: { Authorization: `Bearer ${token}` } }),
           axios.get('/api/auth/profile', { headers: { Authorization: `Bearer ${token}` } })
         ]);
         setDashboardData(dashboardResponse.data);
@@ -40,6 +40,37 @@ export default function RequesterDashboard({ user, onLogout }) {
       case 'Urgent': return 'bg-orange-100 text-orange-700 border-orange-200';
       case 'Moderate': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
       default: return 'bg-gray-100 text-gray-700 border-gray-200';
+    }
+  };
+
+  const handleDeleteRequest = async (requestId) => {
+    if (window.confirm('Are you sure you want to cancel this request? This action cannot be undone.')) {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setError('Authentication token not found.');
+          return;
+        }
+
+        await axios.delete(`http://localhost:5000/api/requests/${requestId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        // Update dashboard data to remove the deleted request
+        setDashboardData(prevData => ({
+          ...prevData,
+          activeRequests: prevData.activeRequests.filter(req => req._id !== requestId),
+          stats: {
+            ...prevData.stats,
+            activeRequests: prevData.stats.activeRequests - 1,
+          }
+        }));
+        // Optionally show a success message
+        // setSuccess('Request cancelled successfully.');
+
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to cancel request.');
+      }
     }
   };
 
@@ -155,7 +186,10 @@ export default function RequesterDashboard({ user, onLogout }) {
                     <button className="px-4 py-2 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors font-medium">
                       View Responses
                     </button>
-                    <button className="px-4 py-2 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors font-medium">
+                    <button 
+                        onClick={() => handleDeleteRequest(request._id)}
+                        className="px-4 py-2 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors font-medium"
+                    >
                       Cancel Request
                     </button>
                   </div>

@@ -275,6 +275,27 @@ async function getAdminDashboard(req, res) {
     }
 }
 
+async function getRequesterDashboard(req, res) {
+    try {
+        const userId = req.user._id;
+        const today = new Date();
+
+        const activeRequests = await Request.find({ requester: userId, requesterModel: 'Requester', status: 'pending' }).sort({ createdAt: -1 });
+        const fulfilledRequests = await Request.find({ requester: userId, requesterModel: 'Requester', status: 'fulfilled' }).populate('donor', 'name').sort({ updatedAt: -1 });
+
+        const stats = {
+            activeRequests: activeRequests.length,
+            fulfilledToday: await Request.countDocuments({ requester: userId, requesterModel: 'Requester', status: 'fulfilled', updatedAt: { $gte: startOfDay(today), $lte: endOfDay(today) } }),
+            totalDonors: 156, // Mock, consider dynamic count
+            unitsCollected: fulfilledRequests.reduce((acc, req) => acc + req.units, 0),
+        };
+
+        res.status(200).json({ activeRequests, fulfilledRequests, stats });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching requester dashboard data', error: error.message });
+    }
+}
+
 async function getMe(req, res) {
     const userData = req.user;
     // Normalize user data to match login response format
@@ -317,6 +338,7 @@ module.exports = {
     toggleDonorAvailability,
     getHospitalDashboard,
     getAdminDashboard,
+    getRequesterDashboard,
     getMe,
     getProfile
 };
