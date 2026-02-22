@@ -83,4 +83,50 @@ async function deleteRequest(req, res) {
     }
 }
 
-module.exports = { createRequest, getRequesterRequests, deleteRequest };
+
+async function getEmergencyRequests(req, res) {
+    try {
+        const emergencyRequests = await Request.find({ 
+                urgency: { $in: [/emergency/i, /urgent/i, /critical/i, /moderate/i] } // Case-insensitive query for common emergency urgency levels, including moderate
+            })
+            .populate({
+                path: 'requester',
+                select: 'name' // Select the fields you need from the requester
+            })
+            .sort({ createdAt: -1 });
+
+        console.log("Emergency Requests from DB:", emergencyRequests); // Log the fetched requests
+
+        res.status(200).json(emergencyRequests);
+    } catch (error) {
+        console.error("Error fetching emergency requests:", error); // Log the error
+        res.status(500).json({ message: "Error fetching emergency requests", error: error.message });
+    }
+}
+
+async function respondToRequest(req, res) {
+    try {
+        const requestId = req.params.id;
+        const donorId = req.user._id;
+
+        const request = await Request.findById(requestId);
+        if (!request) {
+            return res.status(404).json({ message: "Request not found" });
+        }
+
+        if (request.status === 'fulfilled') {
+            return res.status(400).json({ message: "Request already fulfilled" });
+        }
+
+        request.donor = donorId;
+        request.status = 'fulfilled'; // For now, we mark it as fulfilled when a donor responds. 
+                                      // In a real app, this might involve more steps.
+        await request.save();
+
+        res.status(200).json({ message: "Responded to request successfully", request });
+    } catch (error) {
+        res.status(500).json({ message: "Error responding to request", error: error.message });
+    }
+}
+
+module.exports = { createRequest, getRequesterRequests, deleteRequest, getEmergencyRequests, respondToRequest };

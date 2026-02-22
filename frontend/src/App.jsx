@@ -105,6 +105,7 @@ function App() {
           <Route path="requester" element={<RequesterDashboard user={user} onLogout={handleLogout} />} />
           <Route path="requester/update" element={<UpdateRequesterPage user={user} />} />
           <Route path="create-request" element={<CreateRequest user={user} onLogout={handleLogout} />} />
+          <Route path="search" element={<DonorSearch user={user} />} />
           {/* Nested routes for donor */}
           <Route path="donor/history" element={<DonationHistory user={user} />} />
           <Route path="donor/profile" element={<DonorProfile user={user} />} />
@@ -114,7 +115,6 @@ function App() {
         </Route>
 
         {/* Other protected or public routes as needed */}
-        <Route path="/search" element={<DonorSearch />} />
         <Route path="/request-status" element={<RequestStatus user={user} />} />
 
         {/* Fallback route */}

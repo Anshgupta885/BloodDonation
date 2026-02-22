@@ -16,81 +16,71 @@ export default function ManageHospitals({ user, onLogout }) {
   ];
 
   const stats = [
-    { label: 'Total Hospitals', value: hospitals.length },
-    { label: 'Verified', value: hospitals.filter(h => h.status === 'Verified').length },
-    { label: 'Pending', value: hospitals.filter(h => h.status === 'Pending').length },
-    { label: 'Suspended', value: hospitals.filter(h => h.status === 'Suspended').length },
+    { label: 'Total Hospitals', value: hospitals.length, emoji: '🏥', bg: 'stat-purple' },
+    { label: 'Verified', value: hospitals.filter(h => h.status === 'Verified').length, emoji: '✅', bg: 'stat-green' },
+    { label: 'Pending', value: hospitals.filter(h => h.status === 'Pending').length, emoji: '⏳', bg: 'stat-orange' },
+    { label: 'Suspended', value: hospitals.filter(h => h.status === 'Suspended').length, emoji: '🚫', bg: 'stat-red' },
   ];
 
-  const filteredHospitals = hospitals.filter(hospital => {
-    const matchesSearch = hospital.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          hospital.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          hospital.city.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || hospital.status.toLowerCase() === filterStatus;
+  const filteredHospitals = hospitals.filter(h => {
+    const matchesSearch = h.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      h.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      h.city.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filterStatus === 'all' || h.status.toLowerCase() === filterStatus;
     return matchesSearch && matchesFilter;
   });
 
   const getStatusConfig = (status) => {
     switch (status) {
-      case 'Verified':
-        return { bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle };
-      case 'Pending':
-        return { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Clock };
-      case 'Suspended':
-        return { bg: 'bg-red-100', text: 'text-red-700', icon: XCircle };
-      default:
-        return { bg: 'bg-gray-100', text: 'text-gray-700', icon: XCircle };
+      case 'Verified': return { bg: 'bg-green-100', text: 'text-green-700', emoji: '✅' };
+      case 'Pending': return { bg: 'bg-yellow-100', text: 'text-yellow-700', emoji: '⏳' };
+      case 'Suspended': return { bg: 'bg-red-100', text: 'text-red-700', emoji: '🚫' };
+      default: return { bg: 'bg-gray-100', text: 'text-gray-600', emoji: '❓' };
     }
   };
+
+  const hospitalColors = ['#7c3aed', '#2563eb', '#10b981', '#f59e0b', '#ec4899', '#ff3b5c'];
 
   return (
     <DashboardLayout userType="admin" user={user} onLogout={onLogout}>
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Page Header */}
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Manage Hospitals</h1>
-            <p className="text-gray-600 mt-1">View and manage all registered hospitals</p>
+            <h1 className="text-4xl font-extrabold text-gray-900">
+              Manage <span style={{ color: '#7c3aed' }}>Hospitals</span>
+            </h1>
+            <p className="text-gray-500 mt-1">View and manage all registered hospitals</p>
           </div>
-          
-          <button className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-medium">
-            <Download className="w-5 h-5" />
-            Export Data
+          <button className="inline-flex items-center gap-2 px-6 py-3 text-white rounded-2xl font-bold transition-all hover:scale-105 shadow-lg"
+            style={{ background: 'linear-gradient(135deg, #10b981, #059669)', boxShadow: '0 6px 20px rgba(16,185,129,0.35)' }}>
+            <Download className="w-5 h-5" /> Export Data
           </button>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat, index) => (
-            <div key={index} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-              <h3 className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</h3>
-              <p className="text-sm text-gray-600">{stat.label}</p>
+          {stats.map((stat, i) => (
+            <div key={i} className={`rounded-2xl p-6 card-lift cursor-default ${stat.bg}`}>
+              <div className="text-3xl mb-3">{stat.emoji}</div>
+              <h3 className="text-3xl font-extrabold text-gray-900 mb-1">{stat.value}</h3>
+              <p className="text-xs text-gray-500 font-medium">{stat.label}</p>
             </div>
           ))}
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            {/* Search */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+              <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search by name, email, or city..."
-                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
-              />
+                className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-violet-400 transition-all" />
             </div>
-            
-            {/* Status Filter */}
-            <div className="sm:w-48">
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
-              >
+            <div className="sm:w-44">
+              <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-violet-400 transition-all bg-white">
                 <option value="all">All Status</option>
                 <option value="verified">Verified</option>
                 <option value="pending">Pending</option>
@@ -100,134 +90,102 @@ export default function ManageHospitals({ user, onLogout }) {
           </div>
         </div>
 
-        {/* Hospitals Table */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Hospital
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Location
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Contact
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Requests
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredHospitals.map((hospital) => {
-                  const statusConfig = getStatusConfig(hospital.status);
-                  const StatusIcon = statusConfig.icon;
-                  
-                  return (
-                    <tr key={hospital.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
-                            <Building2 className="w-5 h-5 text-white" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">{hospital.name}</p>
-                            <p className="text-sm text-gray-500">{hospital.email}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-start gap-2 text-gray-600">
-                          <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <p>{hospital.city}</p>
-                            <p className="text-sm text-gray-500">{hospital.address}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Phone className="w-4 h-4" />
-                            <span>{hospital.phone}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Mail className="w-4 h-4" />
-                            <span className="truncate max-w-[150px]">{hospital.email}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="font-medium text-gray-900">{hospital.requests}</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${statusConfig.bg} ${statusConfig.text}`}>
-                          <StatusIcon className="w-3 h-3" />
-                          {hospital.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          {hospital.status === 'Pending' && (
-                            <>
-                              <button className="px-3 py-1 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
-                                Approve
-                              </button>
-                              <button className="px-3 py-1 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium">
-                                Reject
-                              </button>
-                            </>
-                          )}
-                          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                            <MoreVertical className="w-5 h-5 text-gray-400" />
+        {/* Hospital Cards (Grid layout instead of table for better visual) */}
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filteredHospitals.map((hospital, index) => {
+            const sc = getStatusConfig(hospital.status);
+            const color = hospitalColors[index % hospitalColors.length];
+            return (
+              <div key={hospital.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden card-lift">
+                {/* Card top color bar */}
+                <div className="h-1.5" style={{ background: color }} />
+                <div className="p-5">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-md"
+                        style={{ background: `linear-gradient(135deg, ${color}, ${color}88)` }}>
+                        🏥
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900 text-sm leading-tight">{hospital.name}</h3>
+                        <p className="text-xs text-gray-400 mt-0.5">{hospital.email}</p>
+                      </div>
+                    </div>
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${sc.bg} ${sc.text}`}>
+                      {sc.emoji} {hospital.status}
+                    </span>
+                  </div>
+
+                  {/* Details */}
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <MapPin className="w-4 h-4 text-gray-400" />
+                      <span>{hospital.city} • {hospital.address}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Phone className="w-4 h-4 text-gray-400" />
+                      <span>{hospital.phone}</span>
+                    </div>
+                  </div>
+
+                  {/* Stats row */}
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <div className="text-center">
+                      <p className="text-xl font-extrabold text-gray-900">{hospital.requests}</p>
+                      <p className="text-xs text-gray-400">Requests</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-gray-400">Joined</p>
+                      <p className="text-xs font-semibold text-gray-600">{new Date(hospital.joinDate).getFullYear()}</p>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-1.5">
+                      {hospital.status === 'Pending' && (
+                        <>
+                          <button className="px-3 py-1.5 text-xs font-bold text-white rounded-lg transition-all hover:scale-105"
+                            style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
+                            ✅ Approve
                           </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          
-          {filteredHospitals.length === 0 && (
-            <div className="p-12 text-center">
-              <Building2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No hospitals found</h3>
-              <p className="text-gray-600">Try adjusting your search or filters</p>
-            </div>
-          )}
+                          <button className="px-3 py-1.5 text-xs font-bold text-white rounded-lg transition-all hover:scale-105"
+                            style={{ background: 'linear-gradient(135deg, #ff3b5c, #ff6b35)' }}>
+                            ❌ Reject
+                          </button>
+                        </>
+                      )}
+                      <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+                        <MoreVertical className="w-4 h-4 text-gray-400" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
+
+        {filteredHospitals.length === 0 && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-16 text-center">
+            <div className="text-6xl mb-4">🏥</div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">No hospitals found</h3>
+            <p className="text-gray-500">Try adjusting your search or filters</p>
+          </div>
+        )}
 
         {/* Pagination */}
         {filteredHospitals.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-600">
-                Showing {filteredHospitals.length} of {hospitals.length} hospitals
-              </p>
-              <div className="flex gap-2">
-                <button className="px-4 py-2 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors font-medium">
-                  Previous
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center justify-between">
+            <p className="text-sm text-gray-500">Showing <strong>{filteredHospitals.length}</strong> of <strong>{hospitals.length}</strong> hospitals</p>
+            <div className="flex gap-2">
+              {['← Prev', '1', '2', 'Next →'].map((label, i) => (
+                <button key={i} className={`px-4 py-2 text-sm rounded-xl font-bold transition-all ${
+                  label === '1' ? 'text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                style={label === '1' ? { background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' } : {}}>
+                  {label}
                 </button>
-                <button className="px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors font-medium">
-                  1
-                </button>
-                <button className="px-4 py-2 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors font-medium">
-                  2
-                </button>
-                <button className="px-4 py-2 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors font-medium">
-                  Next
-                </button>
-              </div>
+              ))}
             </div>
           </div>
         )}

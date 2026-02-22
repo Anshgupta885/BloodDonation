@@ -59,4 +59,6 @@ const authMiddleware = (model) => async (req, res, next) => {
     }
 };
 
-module.exports = { authMiddleware, multiTypeAuthMiddleware };
+const donorAuthMiddleware = authMiddleware(Donor);
+
+module.exports = { authMiddleware, multiTypeAuthMiddleware, donorAuthMiddleware };

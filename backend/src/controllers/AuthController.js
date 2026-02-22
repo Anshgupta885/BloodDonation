@@ -179,20 +179,30 @@ async function getDonorDashboard(req, res) {
         }
 
         const stats = {
-            totalDonations: 12,
-            livesSaved: 36,
+            totalDonations: 12, // Still mock for now, can be updated later
+            livesSaved: 36,     // Still mock for now
             lastDonation: '45 days ago',
             nextEligible: 'in 15 days',
         };
 
-        const emergencyRequests = [
-            { id: 1, hospital: 'City General Hospital', bloodGroup: 'O+', units: 2, distance: '2.3 km', urgency: 'Critical', time: '15 mins ago' },
-            { id: 2, hospital: 'St. Mary Medical Center', bloodGroup: 'A+', units: 1, distance: '4.1 km', urgency: 'Urgent', time: '1 hour ago' },
-        ];
+        const requests = await Request.find({ status: 'pending' })
+            .populate('requester', 'HospitalName name HospitalName address') // Populate name for both models
+            .sort({ createdAt: -1 });
+
+        const emergencyRequests = requests.map(request => ({
+            id: request._id,
+            hospital: request.requester ? (request.requester.HospitalName || request.requester.name || 'Unknown Requester') : 'Unknown Requester',
+            bloodGroup: request.bloodGroup,
+            units: request.units,
+            distance: request.city, // Using city as a stand-in for distance for now
+            urgency: request.urgency,
+            time: new Date(request.createdAt).toLocaleDateString(),
+            requesterModel: request.requesterModel
+        }));
 
         res.status(200).json({ donor, stats, emergencyRequests });
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching donor dashboard data', error });
+        res.status(500).json({ message: 'Error fetching donor dashboard data', error: error.message });
     }
 }
 
@@ -322,6 +332,46 @@ async function getProfile(req, res) {
     res.status(200).json({ user: req.user });
 }
 
+async function searchDonors(req, res) {
+    try {
+        const { bloodGroup, city, availability } = req.query;
+        let query = {};
+
+        if (bloodGroup && bloodGroup !== 'all') {
+            query.bloodGroup = bloodGroup;
+        }
+
+        if (city) {
+            query.city = { $regex: city, $options: 'i' };
+        }
+
+        if (availability === 'available') {
+            query.isAvailable = true;
+        } else if (availability === 'unavailable') {
+            query.isAvailable = false;
+        }
+
+        const donors = await Donor.find(query).select('-password');
+        
+        // Transform the data to match frontend expectations if necessary
+        const formattedDonors = donors.map(donor => ({
+            id: donor._id,
+            name: donor.name,
+            bloodGroup: donor.bloodGroup,
+            city: donor.city,
+            phone: donor.phone,
+            email: donor.email,
+            lastDonation: 'N/A', // We might need a Donation model to track this
+            available: donor.isAvailable,
+            donations: 0 // We might need a Donation model to track this
+        }));
+
+        res.status(200).json(formattedDonors);
+    } catch (error) {
+        res.status(500).json({ message: 'Error searching donors', error: error.message });
+    }
+}
+
 module.exports = {
     registerDonor,
     loginDonor,
@@ -340,5 +390,6 @@ module.exports = {
     getAdminDashboard,
     getRequesterDashboard,
     getMe,
-    getProfile
+    getProfile,
+    searchDonors
 };

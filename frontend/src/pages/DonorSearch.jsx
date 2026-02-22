@@ -1,213 +1,268 @@
-import React, { useState } from 'react';
-import DashboardLayout from './DashboardLayout';
-import { Search, MapPin, Droplet, Phone, Mail, Filter, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, MapPin, Droplet, Phone, Mail, Filter, User, X, Loader2 } from 'lucide-react';
+import axios from 'axios';
 
-export default function DonorSearch({ user, onLogout }) {
-  const [filters, setFilters] = useState({
-    bloodGroup: 'all',
-    city: '',
-    availability: 'all',
-  });
+export default function DonorSearch({ user }) {
+  const [filters, setFilters] = useState({ bloodGroup: 'all', city: '', availability: 'all' });
+  const [showFilters, setShowFilters] = useState(false);
+  const [donors, setDonors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const bloodGroups = ['all', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
-  const donors = [
-    { id: 1, name: 'John Doe', bloodGroup: 'O+', city: 'New York', phone: '+1 (555) 123-4567', email: 'john@example.com', lastDonation: '45 days ago', available: true },
-    { id: 2, name: 'Jane Smith', bloodGroup: 'A+', city: 'New York', phone: '+1 (555) 234-5678', email: 'jane@example.com', lastDonation: '60 days ago', available: true },
-    { id: 3, name: 'Mike Johnson', bloodGroup: 'B+', city: 'New York', phone: '+1 (555) 345-6789', email: 'mike@example.com', lastDonation: '30 days ago', available: false },
-    { id: 4, name: 'Sarah Williams', bloodGroup: 'O-', city: 'New York', phone: '+1 (555) 456-7890', email: 'sarah@example.com', lastDonation: '90 days ago', available: true },
-    { id: 5, name: 'David Brown', bloodGroup: 'AB+', city: 'Brooklyn', phone: '+1 (555) 567-8901', email: 'david@example.com', lastDonation: '75 days ago', available: true },
-    { id: 6, name: 'Emily Davis', bloodGroup: 'A-', city: 'Queens', phone: '+1 (555) 678-9012', email: 'emily@example.com', lastDonation: '50 days ago', available: true },
-  ];
-
-  const handleFilterChange = (e) => {
-    setFilters({
-      ...filters,
-      [e.target.name]: e.target.value
-    });
+  const bloodGroupColors = {
+    'A+': '#ff3b5c', 'A-': '#ff6b35', 'B+': '#7c3aed', 'B-': '#2563eb',
+    'AB+': '#10b981', 'AB-': '#f59e0b', 'O+': '#ec4899', 'O-': '#6366f1',
   };
 
-  const filteredDonors = donors.filter(donor => {
-    const matchesBloodGroup = filters.bloodGroup === 'all' || donor.bloodGroup === filters.bloodGroup;
-    const matchesCity = !filters.city || donor.city.toLowerCase().includes(filters.city.toLowerCase());
-    const matchesAvailability = filters.availability === 'all' || 
-      (filters.availability === 'available' && donor.available) ||
-      (filters.availability === 'unavailable' && !donor.available);
-    
-    return matchesBloodGroup && matchesCity && matchesAvailability;
-  });
+  const fetchDonors = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('/api/donors/search', {
+        headers: { Authorization: `Bearer ${token}` },
+        params: filters
+      });
+      setDonors(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to fetch donors.');
+      setDonors([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDonors();
+  }, [filters.bloodGroup, filters.availability]);
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    fetchDonors();
+  };
+
+  const handleFilterChange = (e) => setFilters({ ...filters, [e.target.name]: e.target.value });
 
   return (
-    <DashboardLayout userType="hospital" user={user} onLogout={onLogout}>
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Page Header */}
+    <div className="max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Search Donors</h1>
-          <p className="text-gray-600 mt-1">Find available blood donors in your area</p>
-        </div>
-
-        <div className="grid lg:grid-cols-4 gap-6">
-          {/* Filters Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-6 sticky top-24">
-              <div className="flex items-center gap-2 text-gray-900">
-                <Filter className="w-5 h-5" />
-                <h2 className="font-bold">Filters</h2>
-              </div>
-
-              {/* Blood Group Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Blood Group
-                </label>
-                <select
-                  name="bloodGroup"
-                  value={filters.bloodGroup}
-                  onChange={handleFilterChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
-                >
-                  {bloodGroups.map((group) => (
-                    <option key={group} value={group}>
-                      {group === 'all' ? 'All Blood Groups' : group}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* City Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  City
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    name="city"
-                    value={filters.city}
-                    onChange={handleFilterChange}
-                    placeholder="Enter city"
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Availability Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Availability
-                </label>
-                <select
-                  name="availability"
-                  value={filters.availability}
-                  onChange={handleFilterChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
-                >
-                  <option value="all">All Donors</option>
-                  <option value="available">Available Only</option>
-                  <option value="unavailable">Unavailable</option>
-                </select>
-              </div>
-
-              <button
-                onClick={() => setFilters({ bloodGroup: 'all', city: '', availability: 'all' })}
-                className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
-              >
-                Reset Filters
-              </button>
-            </div>
-          </div>
-
-          {/* Donors List */}
-          <div className="lg:col-span-3 space-y-4">
-            {/* Results Count */}
-            <div className="flex items-center justify-between bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
-              <div className="flex items-center gap-2">
-                <Search className="w-5 h-5 text-gray-400" />
-                <span className="text-gray-900 font-medium">
-                  {filteredDonors.length} donor{filteredDonors.length !== 1 ? 's' : ''} found
-                </span>
-              </div>
-            </div>
-
-            {/* Donor Cards */}
-            {filteredDonors.length > 0 ? (
-              <div className="space-y-4">
-                {filteredDonors.map((donor) => (
-                  <div key={donor.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                      <div className="flex gap-4 flex-1">
-                        {/* Avatar */}
-                        <div className="w-16 h-16 rounded-xl bg-linear-to-br from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
-                          <User className="w-8 h-8 text-white" />
-                        </div>
-                        
-                        {/* Donor Info */}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-medium text-gray-900 text-lg">{donor.name}</h3>
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              donor.available 
-                                ? 'bg-green-100 text-green-700' 
-                                : 'bg-gray-100 text-gray-700'
-                            }`}>
-                              {donor.available ? 'Available' : 'Unavailable'}
-                            </span>
-                          </div>
-                          
-                          <div className="grid sm:grid-cols-2 gap-2 mb-3">
-                            <div className="flex items-center gap-2 text-sm">
-                              <Droplet className="w-4 h-4 text-red-600" fill="currentColor" />
-                              <span className="font-medium text-red-600">{donor.bloodGroup}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                              <MapPin className="w-4 h-4" />
-                              <span>{donor.city}</span>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                              <Phone className="w-4 h-4" />
-                              <span>{donor.phone}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                              <Mail className="w-4 h-4" />
-                              <span>{donor.email}</span>
-                            </div>
-                          </div>
-                          
-                          <p className="text-xs text-gray-500 mt-2">
-                            Last donation: {donor.lastDonation}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      {/* Action Button */}
-                      <button 
-                        className={`px-6 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
-                          donor.available
-                            ? 'bg-red-600 text-white hover:bg-red-700'
-                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        }`}
-                        disabled={!donor.available}
-                      >
-                        Contact Donor
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
-                <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No donors found</h3>
-                <p className="text-gray-600">Try adjusting your filters to see more results</p>
-              </div>
-            )}
-          </div>
+          <h1 className="text-4xl font-extrabold text-gray-900">
+            Find <span style={{ color: '#ff3b5c' }}>Donors</span>
+          </h1>
+          <p className="text-gray-500 mt-1">Find available blood donors in your area</p>
         </div>
       </div>
-    </DashboardLayout>
+
+      {/* Search Bar + Filter Toggle */}
+      <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-3">
+        <div className="flex-1 relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input type="text" placeholder="Search donors by city..." value={filters.city}
+            onChange={(e) => setFilters({ ...filters, city: e.target.value })}
+            className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-2xl outline-none focus:border-rose-400 transition-all shadow-sm bg-white text-base" />
+        </div>
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-2 px-5 py-4 rounded-2xl font-bold text-sm border-2 transition-all ${
+              showFilters ? 'border-rose-400 text-rose-600 bg-rose-50' : 'border-gray-200 text-gray-600 bg-white hover:border-gray-300'
+            }`}>
+            <Filter className="w-5 h-5" />
+            <span>Filters</span>
+          </button>
+          <button type="submit" className="px-8 py-4 bg-rose-500 text-white rounded-2xl font-bold hover:bg-rose-600 transition-all shadow-lg shadow-rose-200 whitespace-nowrap">
+            Search
+          </button>
+        </div>
+      </form>
+
+      {/* Filter Panel */}
+      {showFilters && (
+        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="grid sm:grid-cols-3 gap-8">
+            {/* Blood Group */}
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Blood Group</label>
+              <div className="grid grid-cols-3 gap-2">
+                {bloodGroups.map((group) => (
+                  <button key={group} type="button" onClick={() => setFilters({ ...filters, bloodGroup: group })}
+                    className={`py-2.5 rounded-xl text-xs font-bold transition-all border ${
+                      filters.bloodGroup === group 
+                        ? 'text-white shadow-lg border-transparent' 
+                        : 'bg-white text-gray-600 border-gray-100 hover:border-rose-200 hover:bg-rose-50'
+                    }`}
+                    style={filters.bloodGroup === group && group !== 'all' ? {
+                      background: bloodGroupColors[group] || '#ff3b5c'
+                    } : filters.bloodGroup === group ? {
+                      background: 'linear-gradient(135deg, #ff3b5c, #ff6b35)'
+                    } : {}}>
+                    {group === 'all' ? 'All' : group}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* City */}
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Location</label>
+              <div className="relative">
+                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input type="text" name="city" value={filters.city} onChange={handleFilterChange}
+                  placeholder="Enter city" className="w-full pl-11 pr-4 py-3 border-2 border-gray-100 rounded-xl outline-none focus:border-rose-400 transition-all bg-gray-50/50" />
+              </div>
+            </div>
+
+            {/* Availability */}
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Status</label>
+              <div className="space-y-2">
+                {[{ id: 'all', label: '👥 All Donors' }, { id: 'available', label: '🟢 Available Now' }, { id: 'unavailable', label: '⚫ Not Available' }].map(opt => (
+                  <button key={opt.id} type="button" onClick={() => setFilters({ ...filters, availability: opt.id })}
+                    className={`w-full text-left px-4 py-3 rounded-xl text-sm font-semibold transition-all border-2 ${
+                      filters.availability === opt.id
+                        ? 'bg-rose-50 text-rose-600 border-rose-200'
+                        : 'bg-white text-gray-500 border-transparent hover:bg-gray-50'
+                    }`}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 pt-6 border-t border-gray-100 flex justify-end">
+            <button onClick={() => setFilters({ bloodGroup: 'all', city: '', availability: 'all' })}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-400 hover:text-rose-500 transition-colors">
+              <X className="w-4 h-4" /> Reset Filters
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Results Count & Error */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-4 py-2 bg-white/50 backdrop-blur-sm rounded-xl border border-gray-200">
+            <Search className="w-4 h-4 text-gray-400" />
+            <span className="text-sm font-bold text-gray-700">{donors.length} results</span>
+          </div>
+          {filters.bloodGroup !== 'all' && (
+            <span className="px-3 py-1.5 text-xs font-bold text-white rounded-full shadow-lg"
+              style={{ background: bloodGroupColors[filters.bloodGroup] || '#ff3b5c' }}>
+              🩸 {filters.bloodGroup}
+            </span>
+          )}
+        </div>
+        {error && (
+          <div className="flex items-center gap-2 text-rose-500 bg-rose-50 px-4 py-2 rounded-xl border border-rose-100">
+            <X className="w-4 h-4" />
+            <span className="text-sm font-bold">{error}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Donor Cards */}
+      {loading ? (
+        <div className="flex flex-col justify-center items-center py-24 space-y-4">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full border-4 border-rose-100 border-t-rose-500 animate-spin" />
+            <Droplet className="absolute inset-0 m-auto w-6 h-6 text-rose-500" />
+          </div>
+          <p className="text-gray-400 font-medium animate-pulse">Finding life-savers...</p>
+        </div>
+      ) : donors.length > 0 ? (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {donors.map((donor) => {
+            const color = bloodGroupColors[donor.bloodGroup] || '#ff3b5c';
+            return (
+              <div key={donor.id} className="group bg-white rounded-3xl shadow-sm hover:shadow-2xl hover:shadow-rose-500/10 border border-gray-100 overflow-hidden transition-all duration-300 card-lift">
+                <div className="h-2" style={{ background: color }} />
+                <div className="p-6">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-extrabold text-xl shadow-lg transform group-hover:scale-110 transition-transform duration-300"
+                        style={{ background: `linear-gradient(135deg, ${color}, ${color}dd)` }}>
+                        {donor.name ? donor.name.charAt(0).toUpperCase() : '?'}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900 text-lg">{donor.name || 'Anonymous Donor'}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className={`w-2.5 h-2.5 rounded-full ${donor.available ? 'bg-green-500 pulse-green' : 'bg-gray-300'}`} />
+                          <span className={`text-xs font-bold tracking-wide uppercase ${donor.available ? 'text-green-600' : 'text-gray-400'}`}>
+                            {donor.available ? 'Active Now' : 'Away'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="px-3 py-2 text-white text-sm font-black rounded-2xl shadow-md"
+                      style={{ background: color }}>
+                      {donor.bloodGroup}
+                    </div>
+                  </div>
+
+                  {/* Info */}
+                  <div className="space-y-3 mb-8">
+                    <div className="flex items-center gap-3 text-gray-600 bg-gray-50 p-3 rounded-2xl border border-gray-100">
+                      <MapPin className="w-4 h-4 text-rose-400" />
+                      <span className="text-sm font-semibold">{donor.city || 'Unknown Location'}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                       <div className="flex items-center gap-2 text-gray-500 text-xs font-bold bg-gray-50/50 p-2 rounded-xl border border-gray-100">
+                         <Phone className="w-3.5 h-3.5" />
+                         <span className="truncate">{donor.phone || 'N/A'}</span>
+                       </div>
+                       <div className="flex items-center gap-2 text-gray-500 text-xs font-bold bg-gray-50/50 p-2 rounded-xl border border-gray-100">
+                         <Mail className="w-3.5 h-3.5" />
+                         <span className="truncate">{donor.email || 'N/A'}</span>
+                       </div>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between pt-5 border-t border-gray-50">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Eligibility</span>
+                      <span className={`text-xs font-bold ${donor.available ? 'text-green-600' : 'text-gray-400'}`}>
+                        {donor.available ? 'Verified' : 'Pending'}
+                      </span>
+                    </div>
+                    <button 
+                      disabled={!donor.available}
+                      className={`px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-300 ${
+                        donor.available
+                          ? 'text-white hover:shadow-xl active:scale-95'
+                          : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                      }`}
+                      style={donor.available ? { 
+                        background: `linear-gradient(135deg, ${color}, ${color}dd)`,
+                        boxShadow: `0 8px 20px ${color}30`
+                      } : {}}>
+                      Contact Donor
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-20 text-center">
+          <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Search className="w-10 h-10 text-gray-300" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-2">No donors match your search</h3>
+          <p className="text-gray-500 max-w-sm mx-auto">Try broadening your search criteria or searching in a different city</p>
+          <button 
+            onClick={() => setFilters({ bloodGroup: 'all', city: '', availability: 'all' })}
+            className="mt-8 px-6 py-3 bg-gray-900 text-white rounded-2xl font-bold hover:bg-gray-800 transition-all">
+            Clear All Filters
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
