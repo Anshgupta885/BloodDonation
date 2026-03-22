@@ -3,7 +3,7 @@ import { Search, MapPin, Droplet, Phone, Mail, Filter, User, X, Loader2 } from '
 import axios from 'axios';
 
 export default function DonorSearch({ user }) {
-  const [filters, setFilters] = useState({ bloodGroup: 'all', city: '', availability: 'all' });
+  const [filters, setFilters] = useState({ bloodGroup: 'all', city: '', pincode: '', availability: 'all' });
   const [showFilters, setShowFilters] = useState(false);
   const [donors, setDonors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +36,24 @@ export default function DonorSearch({ user }) {
 
   useEffect(() => {
     fetchDonors();
-  }, [filters.bloodGroup, filters.availability]);
+  }, [filters.bloodGroup, filters.availability, filters.pincode]);
+
+  const handleContactDonor = (donor) => {
+    const email = donor.email ? `mailto:${donor.email}` : null;
+    const phone = donor.phone ? `tel:${donor.phone}` : null;
+
+    if (phone) {
+      window.location.href = phone;
+      return;
+    }
+
+    if (email) {
+      window.location.href = email;
+      return;
+    }
+
+    window.alert('No contact details available for this donor.');
+  };
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -82,7 +99,7 @@ export default function DonorSearch({ user }) {
       {/* Filter Panel */}
       {showFilters && (
         <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="grid sm:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-4 gap-8">
             {/* Blood Group */}
             <div>
               <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Blood Group</label>
@@ -115,6 +132,13 @@ export default function DonorSearch({ user }) {
               </div>
             </div>
 
+            {/* Pincode */}
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Pincode</label>
+              <input type="text" name="pincode" value={filters.pincode} onChange={handleFilterChange}
+                placeholder="Enter pincode" className="w-full px-4 py-3 border-2 border-gray-100 rounded-xl outline-none focus:border-rose-400 transition-all bg-gray-50/50" />
+            </div>
+
             {/* Availability */}
             <div>
               <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Status</label>
@@ -134,7 +158,7 @@ export default function DonorSearch({ user }) {
           </div>
 
           <div className="mt-6 pt-6 border-t border-gray-100 flex justify-end">
-            <button onClick={() => setFilters({ bloodGroup: 'all', city: '', availability: 'all' })}
+            <button onClick={() => setFilters({ bloodGroup: 'all', city: '', pincode: '', availability: 'all' })}
               className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-400 hover:text-rose-500 transition-colors">
               <X className="w-4 h-4" /> Reset Filters
             </button>
@@ -210,6 +234,12 @@ export default function DonorSearch({ user }) {
                       <MapPin className="w-4 h-4 text-rose-400" />
                       <span className="text-sm font-semibold">{donor.city || 'Unknown Location'}</span>
                     </div>
+                    {donor.pincode && (
+                      <div className="flex items-center gap-3 text-gray-600 bg-gray-50 p-3 rounded-2xl border border-gray-100">
+                        <span className="w-4 h-4 text-center text-rose-400 font-bold">#</span>
+                        <span className="text-sm font-semibold">{donor.pincode}</span>
+                      </div>
+                    )}
                     <div className="grid grid-cols-2 gap-2">
                        <div className="flex items-center gap-2 text-gray-500 text-xs font-bold bg-gray-50/50 p-2 rounded-xl border border-gray-100">
                          <Phone className="w-3.5 h-3.5" />
@@ -232,6 +262,7 @@ export default function DonorSearch({ user }) {
                     </div>
                     <button 
                       disabled={!donor.available}
+                      onClick={() => handleContactDonor(donor)}
                       className={`px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-300 ${
                         donor.available
                           ? 'text-white hover:shadow-xl active:scale-95'
@@ -257,7 +288,7 @@ export default function DonorSearch({ user }) {
           <h3 className="text-2xl font-bold text-gray-900 mb-2">No donors match your search</h3>
           <p className="text-gray-500 max-w-sm mx-auto">Try broadening your search criteria or searching in a different city</p>
           <button 
-            onClick={() => setFilters({ bloodGroup: 'all', city: '', availability: 'all' })}
+            onClick={() => setFilters({ bloodGroup: 'all', city: '', pincode: '', availability: 'all' })}
             className="mt-8 px-6 py-3 bg-gray-900 text-white rounded-2xl font-bold hover:bg-gray-800 transition-all">
             Clear All Filters
           </button>

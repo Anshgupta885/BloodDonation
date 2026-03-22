@@ -1,8 +1,34 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Droplet, Heart, Users, Activity, MapPin, Phone, Mail, Facebook, Twitter, Instagram, ArrowRight, Zap, Shield, Star } from 'lucide-react';
+import axios from 'axios';
 
 export default function LandingPage() {
+  const [criticalRequests, setCriticalRequests] = React.useState([]);
+
+  React.useEffect(() => {
+    let mounted = true;
+    const fetchCritical = async () => {
+      try {
+        const res = await axios.get('/api/requests/public-critical');
+        if (mounted) {
+          setCriticalRequests(Array.isArray(res.data?.requests) ? res.data.requests : []);
+        }
+      } catch (_error) {
+        if (mounted) {
+          setCriticalRequests([]);
+        }
+      }
+    };
+
+    fetchCritical();
+    const interval = setInterval(fetchCritical, 30000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
   const stats = [
     { value: '50,000+', label: 'Active Donors', emoji: '🩸' },
     { value: '12,000+', label: 'Lives Saved', emoji: '❤️' },
@@ -42,6 +68,20 @@ export default function LandingPage() {
 
   return (
     <>
+      {criticalRequests.length > 0 && (
+        <section className="py-3 px-4" style={{ background: 'linear-gradient(135deg, #7f1d1d, #b91c1c)' }}>
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-2 text-white">
+            <p className="font-bold text-sm md:text-base">
+              Critical Need: {criticalRequests[0].bloodGroup} in {criticalRequests[0].city}
+              {criticalRequests[0].pincode ? ` (${criticalRequests[0].pincode})` : ''} - {criticalRequests[0].units} unit(s)
+            </p>
+            <Link to="/register?type=requester" className="text-sm font-bold underline underline-offset-4">
+              Respond or Post Request
+            </Link>
+          </div>
+        </section>
+      )}
+
       {/* Hero Section */}
       <section className="relative overflow-hidden min-h-screen flex items-center" style={{ background: 'linear-gradient(135deg, #fff5f5 0%, #f8f7ff 50%, #fff0fb 100%)' }}>
         {/* Background blobs */}

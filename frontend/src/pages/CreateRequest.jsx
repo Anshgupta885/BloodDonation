@@ -10,6 +10,7 @@ export default function CreateRequest({ user, onLogout }) {
     units: '1',
     urgency: 'Moderate',
     city: '',
+    pincode: '',
     patientName: '',
     byDate: '',
     purpose: '',
@@ -71,7 +72,7 @@ export default function CreateRequest({ user, onLogout }) {
 
       {/* Info Banner */}
       <div className="flex items-start gap-4 p-5 rounded-2xl border" style={{ background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', borderColor: '#bfdbfe' }}>
-        <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-xl flex-shrink-0">💡</div>
+        <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-xl shrink-0">💡</div>
         <div>
           <h3 className="font-bold text-blue-900 mb-0.5">Request Guidelines</h3>
           <p className="text-blue-700 text-sm">Provide accurate information to help donors respond quickly. Critical requests will be highlighted to nearby donors immediately.</p>
@@ -82,13 +83,13 @@ export default function CreateRequest({ user, onLogout }) {
         {/* Feedback */}
         {error && (
           <div className="flex items-center gap-3 bg-red-50 border border-red-200 p-4 rounded-xl">
-            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+            <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
             <p className="text-sm text-red-700 font-medium">{error}</p>
           </div>
         )}
         {success && (
           <div className="flex items-center gap-3 bg-green-50 border border-green-200 p-4 rounded-xl">
-            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+            <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
             <p className="text-sm text-green-700 font-medium">{success}</p>
           </div>
         )}
@@ -153,8 +154,8 @@ export default function CreateRequest({ user, onLogout }) {
           </div>
         </div>
 
-        {/* City & Date */}
-        <div className="grid md:grid-cols-2 gap-6">
+        {/* City, Pincode & Date */}
+        <div className="grid md:grid-cols-3 gap-6">
           <div>
             <label className={labelClass}>📍 City *</label>
             <div className="relative">
@@ -162,6 +163,11 @@ export default function CreateRequest({ user, onLogout }) {
               <input type="text" name="city" value={formData.city} onChange={handleChange}
                 placeholder="Enter city" className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl outline-none transition-all hover:border-gray-300 focus:border-rose-400" required />
             </div>
+          </div>
+          <div>
+            <label className={labelClass}># Pincode</label>
+            <input type="text" name="pincode" value={formData.pincode} onChange={handleChange}
+              placeholder="Enter pincode" className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl outline-none transition-all hover:border-gray-300 focus:border-rose-400" />
           </div>
           <div>
             <label className={labelClass}>📅 Required By *</label>

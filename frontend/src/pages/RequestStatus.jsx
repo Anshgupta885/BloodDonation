@@ -56,19 +56,39 @@ export default function RequestStatus({ user: propUser, onLogout }) {
 
   const tabs = [
     { id: 'all', label: 'All', emoji: '📋', count: requests.length },
-    { id: 'active', label: 'Active', emoji: '⏳', count: requests.filter(r => r.status === 'Active').length },
-    { id: 'fulfilled', label: 'Fulfilled', emoji: '✅', count: requests.filter(r => r.status === 'Fulfilled').length },
+    { id: 'pending', label: 'Pending', emoji: '⏳', count: requests.filter(r => r.status === 'Pending').length },
+    { id: 'accepted', label: 'Accepted', emoji: '🤝', count: requests.filter(r => r.status === 'Accepted').length },
+    { id: 'completed', label: 'Completed', emoji: '✅', count: requests.filter(r => r.status === 'Completed').length },
     { id: 'cancelled', label: 'Cancelled', emoji: '❌', count: requests.filter(r => r.status === 'Cancelled').length },
   ];
 
-  const filteredRequests = activeTab === 'all' ? requests : requests.filter(r => r.status.toLowerCase() === activeTab);
+  const filteredRequests = activeTab === 'all' ? requests : requests.filter(r => String(r.status).toLowerCase() === activeTab);
 
   const getStatusConfig = (status) => {
     switch (status) {
-      case 'Active': return { emoji: '⏳', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', bar: '#3b82f6' };
-      case 'Fulfilled': return { emoji: '✅', bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', bar: '#10b981' };
+      case 'Pending': return { emoji: '⏳', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', bar: '#3b82f6' };
+      case 'Accepted': return { emoji: '🤝', bg: 'bg-violet-50', text: 'text-violet-700', border: 'border-violet-200', bar: '#7c3aed' };
+      case 'Completed': return { emoji: '✅', bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', bar: '#10b981' };
       case 'Cancelled': return { emoji: '❌', bg: 'bg-gray-50', text: 'text-gray-600', border: 'border-gray-200', bar: '#9ca3af' };
       default: return { emoji: '📋', bg: 'bg-gray-50', text: 'text-gray-600', border: 'border-gray-200', bar: '#9ca3af' };
+    }
+  };
+
+  const handleCompleteRequest = async (requestId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`http://localhost:5000/api/requests/${requestId}/complete`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setRequests(prev => prev.map(r => (
+        r._id === requestId ? { ...r, status: 'Completed', fulfilledUnits: r.units } : r
+      )));
+      setSuccessMessage('Request marked as completed.');
+      setError(null);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to complete request.');
+      setSuccessMessage('');
     }
   };
 
@@ -92,7 +112,7 @@ export default function RequestStatus({ user: propUser, onLogout }) {
 
   if (error) return (
     <div className="flex items-center gap-4 bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-2xl font-medium">
-      <AlertCircle className="w-6 h-6 flex-shrink-0" />
+      <AlertCircle className="w-6 h-6 shrink-0" />
       {error}
     </div>
   );
@@ -136,15 +156,15 @@ export default function RequestStatus({ user: propUser, onLogout }) {
       </div>
 
       {/* Active Summary Banner */}
-      {activeTab === 'active' && requests.filter(r => r.status === 'Active').length > 0 && (
+      {(activeTab === 'pending' || activeTab === 'accepted') && requests.filter(r => r.status === 'Pending' || r.status === 'Accepted').length > 0 && (
         <div className="rounded-2xl p-6 text-white shadow-xl"
           style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', boxShadow: '0 12px 35px rgba(59,130,246,0.35)' }}>
           <h2 className="text-xl font-bold mb-4">Active Requests Summary</h2>
           <div className="grid sm:grid-cols-3 gap-4">
             {[
-              { emoji: '⏳', value: requests.filter(r => r.status === 'Active').length, label: 'Pending Requests' },
-              { emoji: '👥', value: requests.filter(r => r.status === 'Active').reduce((s, r) => s + (r.responses?.length || 0), 0), label: 'Total Responses' },
-              { emoji: '🚨', value: requests.filter(r => r.status === 'Active' && r.urgency === 'Critical').length, label: 'Critical Cases' },
+              { emoji: '⏳', value: requests.filter(r => r.status === 'Pending').length, label: 'Pending Requests' },
+              { emoji: '🤝', value: requests.filter(r => r.status === 'Accepted').length, label: 'Accepted Requests' },
+              { emoji: '🚨', value: requests.filter(r => (r.status === 'Pending' || r.status === 'Accepted') && r.urgency === 'Critical').length, label: 'Critical Cases' },
             ].map((item, i) => (
               <div key={i} className="bg-white/15 backdrop-blur-sm rounded-2xl p-4">
                 <div className="text-3xl mb-2">{item.emoji}</div>
@@ -218,7 +238,7 @@ export default function RequestStatus({ user: propUser, onLogout }) {
                           <p className="font-bold text-violet-600">{request.responses?.length || 0} donors</p>
                         </div>
                       </div>
-                      {request.status === 'Fulfilled' && request.donorName && (
+                      {request.status === 'Completed' && request.donorName && (
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center text-sm">✅</div>
                           <div>
@@ -230,7 +250,7 @@ export default function RequestStatus({ user: propUser, onLogout }) {
                     </div>
 
                     {/* Progress Bar */}
-                    {request.status === 'Active' && (
+                    {(request.status === 'Pending' || request.status === 'Accepted') && (
                       <div>
                         <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
                           <span className="font-semibold">Fulfillment Progress</span>
@@ -246,20 +266,27 @@ export default function RequestStatus({ user: propUser, onLogout }) {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex lg:flex-col gap-2 flex-shrink-0">
-                    {request.status === 'Active' && (
+                  <div className="flex lg:flex-col gap-2 shrink-0">
+                    {(request.status === 'Pending' || request.status === 'Accepted') && (
                       <>
                         <button className="px-4 py-2.5 text-sm font-bold text-white rounded-xl transition-all hover:scale-105 shadow-md whitespace-nowrap"
                           style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', boxShadow: '0 4px 12px rgba(59,130,246,0.35)' }}>
                           View Responses
                         </button>
+                        {request.status === 'Accepted' && (
+                          <button onClick={() => handleCompleteRequest(request._id)}
+                            className="px-4 py-2.5 text-sm font-bold text-white rounded-xl transition-all hover:scale-105 shadow-md whitespace-nowrap"
+                            style={{ background: 'linear-gradient(135deg, #10b981, #059669)', boxShadow: '0 4px 12px rgba(16,185,129,0.35)' }}>
+                            Mark Completed
+                          </button>
+                        )}
                         <button onClick={() => handleDeleteRequest(request._id)}
                           className="px-4 py-2.5 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-all border border-red-200 whitespace-nowrap">
                           Cancel Request
                         </button>
                       </>
                     )}
-                    {request.status === 'Fulfilled' && (
+                    {request.status === 'Completed' && (
                       <button className="px-4 py-2.5 text-sm font-bold bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-xl transition-colors whitespace-nowrap">
                         📄 Download Report
                       </button>

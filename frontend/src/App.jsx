@@ -1,26 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { lazy, Suspense, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import axios from 'axios';
 
-import AdminDashboard from './pages/AdminDashboard.jsx';
-import CreateRequest from './pages/CreateRequest.jsx';
-import DashboardLayout from './pages/DashboardLayout.jsx';
-import DonationHistory from './pages/DonationHistory.jsx';
-import DonorDashboard from './pages/DonorDashboard.jsx';
-import DonorProfile from './pages/DonorProfile.jsx';
-import DonorSearch from './pages/DonorSearch.jsx';
-import HospitalDashboard from './pages/HospitalDashboard.jsx';
-import LandingPage from './pages/LandingPage.jsx';
-import LoginPage from './pages/LoginPage.jsx';
-import ManageDonors from './pages/ManageDonors.jsx';
-import ManageHospitals from './pages/ManageHospitals.jsx';
-import RegisterPage from './pages/RegisterPage.jsx';
-import RequesterDashboard from './pages/RequesterDashboard.jsx';
-import RequestStatus from './pages/RequestStatus.jsx';
-import PublicLayout from './pages/PublicLayout.jsx';
-import UpdateRequesterPage from './pages/UpdateRequesterPage.jsx';
-import HospitalProfile from './pages/HospitalProfile.jsx';
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard.jsx'));
+const CreateRequest = lazy(() => import('./pages/CreateRequest.jsx'));
+const DashboardLayout = lazy(() => import('./pages/DashboardLayout.jsx'));
+const DonationHistory = lazy(() => import('./pages/DonationHistory.jsx'));
+const DonorDashboard = lazy(() => import('./pages/DonorDashboard.jsx'));
+const DonorProfile = lazy(() => import('./pages/DonorProfile.jsx'));
+const DonorSearch = lazy(() => import('./pages/DonorSearch.jsx'));
+const HospitalDashboard = lazy(() => import('./pages/HospitalDashboard.jsx'));
+const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
+const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
+const ManageDonors = lazy(() => import('./pages/ManageDonors.jsx'));
+const ManageHospitals = lazy(() => import('./pages/ManageHospitals.jsx'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage.jsx'));
+const RequesterDashboard = lazy(() => import('./pages/RequesterDashboard.jsx'));
+const RequestStatus = lazy(() => import('./pages/RequestStatus.jsx'));
+const PublicLayout = lazy(() => import('./pages/PublicLayout.jsx'));
+const UpdateRequesterPage = lazy(() => import('./pages/UpdateRequesterPage.jsx'));
+const HospitalProfile = lazy(() => import('./pages/HospitalProfile.jsx'));
 
 function App() {
   const [user, setUser] = useState(null);
@@ -81,45 +81,47 @@ function App() {
   
   return (
     <Router>
-      <Routes>
-        {/* Public Routes */}
-        <Route element={<PublicLayout />}>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
-          <Route path="/register" element={<RegisterPage />} />
-        </Route>
-        
-        {/* Protected Dashboard Routes */}
-        <Route 
-          path="/dashboard" 
-          element={user ? <DashboardLayout user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
-        >
-          {/* Redirect to user-specific dashboard */}
-          <Route index element={
-            user ? <Navigate to={`/dashboard/${user.type}`} /> : <Navigate to="/login" />
-          } />
-          <Route path="admin" element={<AdminDashboard user={user} onLogout={handleLogout}/>} />
-          <Route path="hospital" element={<HospitalDashboard user={user} onLogout={handleLogout} />} />
-          <Route path="hospital/profile" element={<HospitalProfile />} />
-          <Route path="donor" element={<DonorDashboard user={user} onLogout={handleLogout} />} />
-          <Route path="requester" element={<RequesterDashboard user={user} onLogout={handleLogout} />} />
-          <Route path="requester/update" element={<UpdateRequesterPage user={user} />} />
-          <Route path="create-request" element={<CreateRequest user={user} onLogout={handleLogout} />} />
-          <Route path="search" element={<DonorSearch user={user} />} />
-          {/* Nested routes for donor */}
-          <Route path="donor/history" element={<DonationHistory user={user} />} />
-          <Route path="donor/profile" element={<DonorProfile user={user} />} />
-          {/* Nested routes for admin */}
-          <Route path="admin/manage-donors" element={<ManageDonors />} />
-          <Route path="admin/manage-hospitals" element={<ManageHospitals />} />
-        </Route>
+      <Suspense fallback={<div>Loading page...</div>}>
+        <Routes>
+          {/* Public Routes */}
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+            <Route path="/register" element={<RegisterPage />} />
+          </Route>
 
-        {/* Other protected or public routes as needed */}
-        <Route path="/request-status" element={<RequestStatus user={user} />} />
+          {/* Protected Dashboard Routes */}
+          <Route
+            path="/dashboard"
+            element={user ? <DashboardLayout user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}
+          >
+            {/* Redirect to user-specific dashboard */}
+            <Route index element={
+              user ? <Navigate to={`/dashboard/${user.type}`} /> : <Navigate to="/login" />
+            } />
+            <Route path="admin" element={<AdminDashboard user={user} onLogout={handleLogout} />} />
+            <Route path="hospital" element={<HospitalDashboard user={user} onLogout={handleLogout} />} />
+            <Route path="hospital/profile" element={<HospitalProfile />} />
+            <Route path="donor" element={<DonorDashboard user={user} onLogout={handleLogout} />} />
+            <Route path="requester" element={<RequesterDashboard user={user} onLogout={handleLogout} />} />
+            <Route path="requester/update" element={<UpdateRequesterPage user={user} />} />
+            <Route path="create-request" element={<CreateRequest user={user} onLogout={handleLogout} />} />
+            <Route path="search" element={<DonorSearch user={user} />} />
+            {/* Nested routes for donor */}
+            <Route path="donor/history" element={<DonationHistory user={user} />} />
+            <Route path="donor/profile" element={<DonorProfile user={user} />} />
+            {/* Nested routes for admin */}
+            <Route path="admin/manage-donors" element={<ManageDonors />} />
+            <Route path="admin/manage-hospitals" element={<ManageHospitals />} />
+          </Route>
 
-        {/* Fallback route */}
-        <Route path="*" element={<Navigate to={user ? `/dashboard/${user.type}` : "/"} />} />
-      </Routes>
+          {/* Other protected or public routes as needed */}
+          <Route path="/request-status" element={<RequestStatus user={user} />} />
+
+          {/* Fallback route */}
+          <Route path="*" element={<Navigate to={user ? `/dashboard/${user.type}` : "/"} />} />
+        </Routes>
+      </Suspense>
     </Router>
   );
 }

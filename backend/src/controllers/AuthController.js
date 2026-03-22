@@ -3,28 +3,52 @@ const Hospital = require('../models/Hospital');
 const Request = require('../models/Request');
 const Admin = require('../models/Admin');
 const Requester = require('../models/Requester');
-const request = require('../models/Request');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
-const { subMonths, startOfMonth, endOfMonth, startOfDay, endOfDay } = require('date-fns');
+const { startOfDay, endOfDay } = require('date-fns');
 
 dotenv.config();
 
+function isValidEmail(email) {
+    return typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function isValidPassword(password) {
+    return typeof password === 'string' && password.length >= 6;
+}
+
 // ... (registerDonor, logoutDonor, registerHospital, loginHospital, logoutHospital functions remain the same)
 async function registerDonor(req, res) {
-    const{ name, bloodGroup, email, phone, city, password} = req.body;
+    const{ name, age, bloodGroup, email, phone, city, pincode, password, latitude, longitude } = req.body;
+    if (!name || !bloodGroup || !email || !phone || !city || !password) {
+        return res.status(400).json({ message: 'Missing required fields' });
+    }
+    if (!isValidEmail(email) || !isValidPassword(password)) {
+        return res.status(400).json({ message: 'Invalid email or weak password' });
+    }
     const useralreadyexists=await Donor.findOne({email:email});
     if(useralreadyexists){
         return res.status(400).json({message:"User already exists"});
     }
+
+    const location = (
+        typeof latitude === 'number' && typeof longitude === 'number'
+    ) ? {
+        type: 'Point',
+        coordinates: [longitude, latitude]
+    } : undefined;
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const newDonor = new Donor({
         name: name,
+        age,
         bloodGroup: bloodGroup,
         email: email,
         phone: phone,
         city: city,
+        pincode,
+        ...(location ? { location } : {}),
         password: hashedPassword
     });
 
@@ -39,6 +63,9 @@ async function loginDonor(req, res) {
     console.log('Donor found in DB:', donor);
     if (!donor) {
         return res.status(400).json({ message: "Invalid email or password" });
+    }
+    if (donor.isBlocked) {
+        return res.status(403).json({ message: 'Account is blocked. Contact admin.' });
     }
     console.log('Stored hashed password:', donor.password);
     const isPasswordValid = await bcrypt.compare(password, donor.password);
@@ -56,7 +83,13 @@ async function logoutDonor(req, res){
 }
 
 async function registerHospital(req, res) {
-    const{ name, city, address, phone, email, password} = req.body;
+    const{ name, city, pincode, address, phone, email, password} = req.body;
+    if (!name || !city || !address || !phone || !email || !password) {
+        return res.status(400).json({ message: 'Missing required fields' });
+    }
+    if (!isValidEmail(email) || !isValidPassword(password)) {
+        return res.status(400).json({ message: 'Invalid email or weak password' });
+    }
     const useralreadyexists=await Hospital.findOne({email:email});
     if(useralreadyexists){
         return res.status(400).json({message:"User already exists"});
@@ -65,6 +98,7 @@ async function registerHospital(req, res) {
     const newHospital = new Hospital({
         HospitalName: name,
         City: city,
+        pincode,
         address: address,
         phone: phone,
         email: email,
@@ -79,6 +113,9 @@ async function loginHospital(req, res) {
     const hospital = await Hospital.findOne({ email: email });
     if (!hospital) {
         return res.status(400).json({ message: "Invalid email or password" });
+    }
+    if (hospital.isBlocked) {
+        return res.status(403).json({ message: 'Account is blocked. Contact admin.' });
     }
     const isPasswordValid = await bcrypt.compare(password, hospital.password);
     if (!isPasswordValid) {
@@ -95,12 +132,21 @@ async function loginRequester(req, res) {
     if (!requester) {
         return res.status(400).json({ message: "Invalid email or password" });
     }
+    if (requester.isBlocked) {
+        return res.status(403).json({ message: 'Account is blocked. Contact admin.' });
+    }
     const isPasswordValid = await bcrypt.compare(password, requester.passwordHash);
     if (!isPasswordValid) {
         return res.status(400).json({ message: "Invalid email or password" });
     }
     const token = jwt.sign({ id: requester._id, type: 'requester' }, process.env.JWT_SECRET_KEY, { expiresIn: '7d' });
-    const user = { id: requester._id, name: requester.name, email: requester.email, type: 'requester' };
+    const user = {
+        id: requester._id,
+        name: requester.name,
+        email: requester.email,
+        type: 'requester',
+        roleAlias: requester.roleAlias || 'recipient'
+    };
     res.status(200).json({ message: "Login successful", token, user });
 }
 
@@ -110,7 +156,13 @@ async function logoutHospital(req, res){
 
 
 async function createRequester(req, res) {
-   const {name,email,phone,city,address,password} = req.body;
+   const {name,age,email,phone,city,pincode,address,password,roleAlias} = req.body;
+    if (!name || !email || !phone || !city || !address || !password) {
+        return res.status(400).json({ message: 'Missing required fields' });
+    }
+    if (!isValidEmail(email) || !isValidPassword(password)) {
+        return res.status(400).json({ message: 'Invalid email or weak password' });
+    }
     const useralreadyexists=await Requester.findOne({email:email});
     if(useralreadyexists){
         return res.status(400).json({message:"User already exists"});
@@ -118,10 +170,13 @@ async function createRequester(req, res) {
     const hashedPassword = await bcrypt.hash(password, 10);
     const newRequester = new Requester({
         name,
+        age,
         email,
         phone,
         city,
+        pincode,
         address,
+        roleAlias: roleAlias === 'patient' ? 'patient' : 'recipient',
         passwordHash: hashedPassword
     });
     await newRequester.save();
@@ -157,6 +212,9 @@ async function LoginAdmin(req, res) {
     const admin = await Admin.findOne({ email: email });
     if (!admin) {
         return res.status(400).json({ message: "Invalid email or password" });
+    }
+    if (admin.isBlocked) {
+        return res.status(403).json({ message: 'Account is blocked. Contact super admin.' });
     }
     const isPasswordValid = await bcrypt.compare(password, admin.password);
     if (!isPasswordValid) {
@@ -225,12 +283,12 @@ async function getHospitalDashboard(req, res) {
         const userId = req.user.id;
         const today = new Date();
 
-        const activeRequests = await Request.find({ requester: userId, status: 'pending' }).sort({ createdAt: -1 });
-        const fulfilledRequests = await Request.find({ requester: userId, status: 'fulfilled' }).populate('donor', 'name').sort({ updatedAt: -1 });
+        const activeRequests = await Request.find({ requester: userId, status: { $in: ['pending', 'accepted'] } }).sort({ createdAt: -1 });
+        const fulfilledRequests = await Request.find({ requester: userId, status: 'completed' }).populate('donor', 'name').sort({ updatedAt: -1 });
 
         const stats = {
             activeRequests: activeRequests.length,
-            fulfilledToday: await Request.countDocuments({ requester: userId, status: 'fulfilled', updatedAt: { $gte: startOfDay(today), $lte: endOfDay(today) } }),
+            fulfilledToday: await Request.countDocuments({ requester: userId, status: 'completed', updatedAt: { $gte: startOfDay(today), $lte: endOfDay(today) } }),
             totalDonors: 156, // Mock
             unitsCollected: fulfilledRequests.reduce((acc, req) => acc + req.units, 0),
         };
@@ -242,60 +300,17 @@ async function getHospitalDashboard(req, res) {
 }
 
 
-async function getAdminDashboard(req, res) {
-    try {
-        const totalDonors = await Donor.countDocuments();
-        const totalHospitals = await Hospital.countDocuments();
-        const totalRequests = await Request.countDocuments();
-        const totalUnitsDonated = 0; // Placeholder
-
-        const monthlyData = [];
-        for (let i = 5; i >= 0; i--) {
-            const date = subMonths(new Date(), i);
-            monthlyData.push({
-                month: date.toLocaleString('default', { month: 'short' }),
-                donations: Math.floor(Math.random() * 1000) + 500, // Mock data
-            });
-        }
-
-        const bloodGroupDistribution = await Donor.aggregate([
-            { $group: { _id: '$bloodGroup', value: { $sum: 1 } } },
-            { $project: { name: '$_id', value: 1, _id: 0 } }
-        ]);
-
-        const recentActivities = [
-            { id: 1, type: 'donor', message: 'New donor registered: John Smith', time: '5 mins ago', status: 'success' },
-            { id: 2, type: 'hospital', message: 'City Hospital created urgent blood request', time: '15 mins ago', status: 'warning' },
-            { id: 3, type: 'donation', message: 'Donation completed at Memorial Hospital', time: '1 hour ago', status: 'success' },
-        ]; // Mock data
-
-        res.status(200).json({
-            stats: {
-                totalDonors,
-                totalHospitals,
-                totalRequests,
-                totalUnitsDonated,
-            },
-            monthlyData,
-            bloodGroupData: bloodGroupDistribution,
-            recentActivities
-        });
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching dashboard data', error });
-    }
-}
-
 async function getRequesterDashboard(req, res) {
     try {
         const userId = req.user._id;
         const today = new Date();
 
-        const activeRequests = await Request.find({ requester: userId, requesterModel: 'Requester', status: 'pending' }).sort({ createdAt: -1 });
-        const fulfilledRequests = await Request.find({ requester: userId, requesterModel: 'Requester', status: 'fulfilled' }).populate('donor', 'name').sort({ updatedAt: -1 });
+        const activeRequests = await Request.find({ requester: userId, requesterModel: 'Requester', status: { $in: ['pending', 'accepted'] } }).sort({ createdAt: -1 });
+        const fulfilledRequests = await Request.find({ requester: userId, requesterModel: 'Requester', status: 'completed' }).populate('donor', 'name').sort({ updatedAt: -1 });
 
         const stats = {
             activeRequests: activeRequests.length,
-            fulfilledToday: await Request.countDocuments({ requester: userId, requesterModel: 'Requester', status: 'fulfilled', updatedAt: { $gte: startOfDay(today), $lte: endOfDay(today) } }),
+            fulfilledToday: await Request.countDocuments({ requester: userId, requesterModel: 'Requester', status: 'completed', updatedAt: { $gte: startOfDay(today), $lte: endOfDay(today) } }),
             totalDonors: 156, // Mock, consider dynamic count
             unitsCollected: fulfilledRequests.reduce((acc, req) => acc + req.units, 0),
         };
@@ -323,6 +338,9 @@ async function getMe(req, res) {
         user.name = userData.HospitalName || userData.name;
     } else if (userData.type === 'admin') {
         user.name = 'Admin';
+    } else if (userData.type === 'requester') {
+        user.name = userData.name;
+        user.roleAlias = userData.roleAlias || 'recipient';
     }
     
     res.status(200).json({ user });
@@ -334,7 +352,7 @@ async function getProfile(req, res) {
 
 async function searchDonors(req, res) {
     try {
-        const { bloodGroup, city, availability } = req.query;
+        const { bloodGroup, city, pincode, availability } = req.query;
         let query = {};
 
         if (bloodGroup && bloodGroup !== 'all') {
@@ -345,11 +363,17 @@ async function searchDonors(req, res) {
             query.city = { $regex: city, $options: 'i' };
         }
 
+        if (pincode) {
+            query.pincode = String(pincode);
+        }
+
         if (availability === 'available') {
             query.isAvailable = true;
         } else if (availability === 'unavailable') {
             query.isAvailable = false;
         }
+
+        query.isBlocked = false;
 
         const donors = await Donor.find(query).select('-password');
         
@@ -359,6 +383,7 @@ async function searchDonors(req, res) {
             name: donor.name,
             bloodGroup: donor.bloodGroup,
             city: donor.city,
+            pincode: donor.pincode,
             phone: donor.phone,
             email: donor.email,
             lastDonation: 'N/A', // We might need a Donation model to track this
@@ -387,7 +412,6 @@ module.exports = {
     getDonorDashboard,
     toggleDonorAvailability,
     getHospitalDashboard,
-    getAdminDashboard,
     getRequesterDashboard,
     getMe,
     getProfile,

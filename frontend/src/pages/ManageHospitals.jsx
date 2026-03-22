@@ -1,40 +1,64 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import DashboardLayout from './DashboardLayout';
-import { Search, Download, MoreVertical, CheckCircle, Clock, XCircle, Building2, MapPin, Phone, Mail } from 'lucide-react';
+import { Search, Download, MoreVertical, Building2, MapPin, Phone, Mail } from 'lucide-react';
+import axios from 'axios';
 
 export default function ManageHospitals({ user, onLogout }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [hospitals, setHospitals] = useState([]);
 
-  const hospitals = [
-    { id: 1, name: 'City General Hospital', email: 'info@citygeneral.com', city: 'New York', address: '123 Main St', phone: '+1 (555) 100-0001', requests: 45, status: 'Verified', joinDate: '2022-01-10' },
-    { id: 2, name: 'St. Mary Medical Center', email: 'contact@stmary.com', city: 'Los Angeles', address: '456 Health Ave', phone: '+1 (555) 100-0002', requests: 38, status: 'Verified', joinDate: '2022-03-15' },
-    { id: 3, name: 'Memorial Hospital', email: 'admin@memorial.com', city: 'Chicago', address: '789 Care Blvd', phone: '+1 (555) 100-0003', requests: 52, status: 'Pending', joinDate: '2026-01-20' },
-    { id: 4, name: 'Central Healthcare', email: 'info@centralhc.com', city: 'Houston', address: '321 Medical Dr', phone: '+1 (555) 100-0004', requests: 41, status: 'Verified', joinDate: '2022-06-22' },
-    { id: 5, name: 'University Hospital', email: 'contact@univhosp.com', city: 'Phoenix', address: '654 Campus Rd', phone: '+1 (555) 100-0005', requests: 29, status: 'Verified', joinDate: '2023-02-18' },
-    { id: 6, name: 'Community Medical', email: 'admin@commmed.com', city: 'Philadelphia', address: '987 Community St', phone: '+1 (555) 100-0006', requests: 12, status: 'Suspended', joinDate: '2023-08-30' },
-  ];
+  useEffect(() => {
+    const fetchHospitals = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('/api/admins/users?type=hospital', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setHospitals(response.data?.users || []);
+      } catch (_error) {
+        setHospitals([]);
+      }
+    };
+
+    fetchHospitals();
+  }, []);
+
+  const handleToggleBlock = async (hospital) => {
+    try {
+      const token = localStorage.getItem('token');
+      const endpoint = hospital.isBlocked ? 'unblock' : 'block';
+      await axios.patch(`/api/admins/users/hospital/${hospital.id}/${endpoint}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setHospitals(prev => prev.map(h => (
+        h.id === hospital.id ? { ...h, isBlocked: !h.isBlocked } : h
+      )));
+    } catch (_error) {
+      // Keep UI unchanged when request fails.
+    }
+  };
 
   const stats = [
     { label: 'Total Hospitals', value: hospitals.length, emoji: '🏥', bg: 'stat-purple' },
-    { label: 'Verified', value: hospitals.filter(h => h.status === 'Verified').length, emoji: '✅', bg: 'stat-green' },
-    { label: 'Pending', value: hospitals.filter(h => h.status === 'Pending').length, emoji: '⏳', bg: 'stat-orange' },
-    { label: 'Suspended', value: hospitals.filter(h => h.status === 'Suspended').length, emoji: '🚫', bg: 'stat-red' },
+    { label: 'Unblocked', value: hospitals.filter(h => !h.isBlocked).length, emoji: '✅', bg: 'stat-green' },
+    { label: 'Blocked', value: hospitals.filter(h => h.isBlocked).length, emoji: '🚫', bg: 'stat-red' },
+    { label: 'With Pincode', value: hospitals.filter(h => h.pincode).length, emoji: '#', bg: 'stat-orange' },
   ];
 
   const filteredHospitals = hospitals.filter(h => {
     const matchesSearch = h.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       h.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       h.city.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || h.status.toLowerCase() === filterStatus;
+    const statusLabel = h.isBlocked ? 'suspended' : 'verified';
+    const matchesFilter = filterStatus === 'all' || statusLabel === filterStatus;
     return matchesSearch && matchesFilter;
   });
 
-  const getStatusConfig = (status) => {
-    switch (status) {
-      case 'Verified': return { bg: 'bg-green-100', text: 'text-green-700', emoji: '✅' };
-      case 'Pending': return { bg: 'bg-yellow-100', text: 'text-yellow-700', emoji: '⏳' };
-      case 'Suspended': return { bg: 'bg-red-100', text: 'text-red-700', emoji: '🚫' };
+  const getStatusConfig = (isBlocked) => {
+    switch (isBlocked) {
+      case false: return { bg: 'bg-green-100', text: 'text-green-700', emoji: '✅', label: 'Active' };
+      case true: return { bg: 'bg-red-100', text: 'text-red-700', emoji: '🚫', label: 'Blocked' };
       default: return { bg: 'bg-gray-100', text: 'text-gray-600', emoji: '❓' };
     }
   };
@@ -93,7 +117,7 @@ export default function ManageHospitals({ user, onLogout }) {
         {/* Hospital Cards (Grid layout instead of table for better visual) */}
         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filteredHospitals.map((hospital, index) => {
-            const sc = getStatusConfig(hospital.status);
+            const sc = getStatusConfig(hospital.isBlocked);
             const color = hospitalColors[index % hospitalColors.length];
             return (
               <div key={hospital.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden card-lift">
@@ -113,7 +137,7 @@ export default function ManageHospitals({ user, onLogout }) {
                       </div>
                     </div>
                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${sc.bg} ${sc.text}`}>
-                      {sc.emoji} {hospital.status}
+                      {sc.emoji} {sc.label}
                     </span>
                   </div>
 
@@ -121,41 +145,34 @@ export default function ManageHospitals({ user, onLogout }) {
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <MapPin className="w-4 h-4 text-gray-400" />
-                      <span>{hospital.city} • {hospital.address}</span>
+                      <span>{hospital.city} • {hospital.pincode || 'No pincode'}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Phone className="w-4 h-4 text-gray-400" />
-                      <span>{hospital.phone}</span>
+                      <span>{hospital.phone || 'N/A'}</span>
                     </div>
                   </div>
 
                   {/* Stats row */}
                   <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                     <div className="text-center">
-                      <p className="text-xl font-extrabold text-gray-900">{hospital.requests}</p>
-                      <p className="text-xs text-gray-400">Requests</p>
+                      <p className="text-xl font-extrabold text-gray-900">{hospital.city || '-'}</p>
+                      <p className="text-xs text-gray-400">City</p>
                     </div>
                     <div className="text-center">
                       <p className="text-xs text-gray-400">Joined</p>
-                      <p className="text-xs font-semibold text-gray-600">{new Date(hospital.joinDate).getFullYear()}</p>
+                      <p className="text-xs font-semibold text-gray-600">{hospital.createdAt ? new Date(hospital.createdAt).getFullYear() : '-'}</p>
                     </div>
 
                     {/* Action Buttons */}
                     <div className="flex gap-1.5">
-                      {hospital.status === 'Pending' && (
-                        <>
-                          <button className="px-3 py-1.5 text-xs font-bold text-white rounded-lg transition-all hover:scale-105"
-                            style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
-                            ✅ Approve
-                          </button>
-                          <button className="px-3 py-1.5 text-xs font-bold text-white rounded-lg transition-all hover:scale-105"
-                            style={{ background: 'linear-gradient(135deg, #ff3b5c, #ff6b35)' }}>
-                            ❌ Reject
-                          </button>
-                        </>
-                      )}
-                      <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
-                        <MoreVertical className="w-4 h-4 text-gray-400" />
+                      <button
+                        onClick={() => handleToggleBlock(hospital)}
+                        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+                          hospital.isBlocked ? 'bg-green-50 text-green-700 hover:bg-green-100' : 'bg-red-50 text-red-700 hover:bg-red-100'
+                        }`}
+                      >
+                        {hospital.isBlocked ? 'Unblock' : 'Block'}
                       </button>
                     </div>
                   </div>

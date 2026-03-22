@@ -6,6 +6,7 @@ export default function DashboardLayout({ user, onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
   const userType = user?.type;
+  const roleDisplay = userType === 'requester' ? 'recipient/patient' : userType;
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
@@ -74,7 +75,7 @@ export default function DashboardLayout({ user, onLogout }) {
           <p className="text-white font-semibold text-sm truncate">{user?.name || user?.HospitalName || 'User'}</p>
           <p className="text-white/70 text-xs truncate">{user?.email}</p>
           <span className={`mt-2 inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white capitalize`}>
-            {userType} Portal
+                {roleDisplay} Portal
           </span>
         </div>
       </div>
@@ -168,7 +169,7 @@ export default function DashboardLayout({ user, onLogout }) {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-gray-900 leading-none">{user?.name || user?.HospitalName || 'User'}</p>
-                  <p className={`text-xs capitalize mt-0.5 font-medium ${typeBadge[userType]?.split(' ')[1] || 'text-gray-500'}`}>{userType}</p>
+                  <p className={`text-xs capitalize mt-0.5 font-medium ${typeBadge[userType]?.split(' ')[1] || 'text-gray-500'}`}>{roleDisplay}</p>
                 </div>
               </div>
               <button

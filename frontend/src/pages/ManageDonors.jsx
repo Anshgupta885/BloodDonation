@@ -1,19 +1,44 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import DashboardLayout from './DashboardLayout';
-import { Search, Download, MoreVertical, CheckCircle, XCircle, User, Droplet, MapPin, Phone } from 'lucide-react';
+import { Search, Download, MoreVertical, User, Droplet, MapPin, Phone } from 'lucide-react';
+import axios from 'axios';
 
 export default function ManageDonors({ user, onLogout }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [donors, setDonors] = useState([]);
 
-  const donors = [
-    { id: 1, name: 'John Doe', email: 'john@example.com', bloodGroup: 'O+', city: 'New York', phone: '+1 (555) 123-4567', donations: 12, status: 'Active', joinDate: '2023-01-15' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com', bloodGroup: 'A+', city: 'Los Angeles', phone: '+1 (555) 234-5678', donations: 8, status: 'Active', joinDate: '2023-03-22' },
-    { id: 3, name: 'Mike Johnson', email: 'mike@example.com', bloodGroup: 'B+', city: 'Chicago', phone: '+1 (555) 345-6789', donations: 15, status: 'Inactive', joinDate: '2022-11-10' },
-    { id: 4, name: 'Sarah Williams', email: 'sarah@example.com', bloodGroup: 'O-', city: 'Houston', phone: '+1 (555) 456-7890', donations: 20, status: 'Active', joinDate: '2022-08-05' },
-    { id: 5, name: 'David Brown', email: 'david@example.com', bloodGroup: 'AB+', city: 'Phoenix', phone: '+1 (555) 567-8901', donations: 5, status: 'Active', joinDate: '2024-02-18' },
-    { id: 6, name: 'Emily Davis', email: 'emily@example.com', bloodGroup: 'A-', city: 'Philadelphia', phone: '+1 (555) 678-9012', donations: 10, status: 'Suspended', joinDate: '2023-06-30' },
-  ];
+  useEffect(() => {
+    const fetchDonors = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('/api/admins/users?type=donor', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setDonors(response.data?.users || []);
+      } catch (_error) {
+        setDonors([]);
+      }
+    };
+
+    fetchDonors();
+  }, []);
+
+  const handleToggleBlock = async (donor) => {
+    try {
+      const token = localStorage.getItem('token');
+      const endpoint = donor.isBlocked ? 'unblock' : 'block';
+      await axios.patch(`/api/admins/users/donor/${donor.id}/${endpoint}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setDonors(prev => prev.map(d => (
+        d.id === donor.id ? { ...d, isBlocked: !d.isBlocked } : d
+      )));
+    } catch (_error) {
+      // Keep UI unchanged when request fails.
+    }
+  };
 
   const bloodGroupColors = {
     'A+': '#ff3b5c', 'A-': '#ff6b35', 'B+': '#7c3aed', 'B-': '#2563eb',
@@ -22,24 +47,23 @@ export default function ManageDonors({ user, onLogout }) {
 
   const stats = [
     { label: 'Total Donors', value: donors.length, emoji: '👥', bg: 'stat-blue' },
-    { label: 'Active', value: donors.filter(d => d.status === 'Active').length, emoji: '🟢', bg: 'stat-green' },
-    { label: 'Inactive', value: donors.filter(d => d.status === 'Inactive').length, emoji: '⚫', bg: 'stat-orange' },
-    { label: 'Suspended', value: donors.filter(d => d.status === 'Suspended').length, emoji: '🔴', bg: 'stat-red' },
+    { label: 'Unblocked', value: donors.filter(d => !d.isBlocked).length, emoji: '🟢', bg: 'stat-green' },
+    { label: 'Blocked', value: donors.filter(d => d.isBlocked).length, emoji: '🔴', bg: 'stat-red' },
+    { label: 'With Pincode', value: donors.filter(d => d.pincode).length, emoji: '#', bg: 'stat-orange' },
   ];
 
   const filteredDonors = donors.filter(donor => {
     const matchesSearch = donor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      donor.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      donor.bloodGroup.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || donor.status.toLowerCase() === filterStatus;
+      donor.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const statusLabel = donor.isBlocked ? 'suspended' : 'active';
+    const matchesFilter = filterStatus === 'all' || statusLabel === filterStatus;
     return matchesSearch && matchesFilter;
   });
 
-  const getStatusConfig = (status) => {
-    switch (status) {
-      case 'Active': return { bg: 'bg-green-100', text: 'text-green-700', emoji: '🟢' };
-      case 'Inactive': return { bg: 'bg-gray-100', text: 'text-gray-600', emoji: '⚫' };
-      case 'Suspended': return { bg: 'bg-red-100', text: 'text-red-700', emoji: '🔴' };
+  const getStatusConfig = (isBlocked) => {
+    switch (isBlocked) {
+      case false: return { bg: 'bg-green-100', text: 'text-green-700', emoji: '🟢', label: 'Active' };
+      case true: return { bg: 'bg-red-100', text: 'text-red-700', emoji: '🔴', label: 'Blocked' };
       default: return { bg: 'bg-gray-100', text: 'text-gray-600', emoji: '⚫' };
     }
   };
@@ -106,12 +130,12 @@ export default function ManageDonors({ user, onLogout }) {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {filteredDonors.map((donor) => {
-                  const sc = getStatusConfig(donor.status);
+                  const sc = getStatusConfig(donor.isBlocked);
                   return (
                     <tr key={donor.id} className="hover:bg-gray-50/80 transition-colors group">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0"
                             style={{ background: `linear-gradient(135deg, ${bloodGroupColors[donor.bloodGroup] || '#ff3b5c'}, ${bloodGroupColors[donor.bloodGroup] || '#ff3b5c'}88)` }}>
                             {donor.name[0]}
                           </div>
@@ -122,38 +146,43 @@ export default function ManageDonors({ user, onLogout }) {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-xs font-bold shadow-sm"
-                          style={{ background: bloodGroupColors[donor.bloodGroup] || '#ff3b5c' }}>
-                          🩸 {donor.bloodGroup}
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm bg-gray-100 text-gray-700"
+                        >
+                          #{donor.pincode || 'N/A'}
                         </span>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <MapPin className="w-4 h-4 text-gray-400" />
-                          {donor.city}
+                          {donor.city || 'N/A'}
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Phone className="w-4 h-4 text-gray-400" />
-                          {donor.phone}
+                          {donor.phone || 'N/A'}
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-xl bg-rose-50 flex items-center justify-center text-sm font-bold text-rose-600">
-                            {donor.donations}
+                            {donor.donationCount || 0}
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${sc.bg} ${sc.text}`}>
-                          {sc.emoji} {donor.status}
+                          {sc.emoji} {sc.label}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <button className="p-2 hover:bg-gray-100 rounded-xl transition-colors group-hover:bg-gray-100">
-                          <MoreVertical className="w-5 h-5 text-gray-400" />
+                        <button
+                          onClick={() => handleToggleBlock(donor)}
+                          className={`px-3 py-2 rounded-xl text-xs font-bold transition-colors ${
+                            donor.isBlocked ? 'bg-green-50 text-green-700 hover:bg-green-100' : 'bg-red-50 text-red-700 hover:bg-red-100'
+                          }`}
+                        >
+                          {donor.isBlocked ? 'Unblock' : 'Block'}
                         </button>
                       </td>
                     </tr>

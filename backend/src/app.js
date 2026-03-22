@@ -28,6 +28,12 @@ app.use('/api', RequestRoutes);
 const AuthRoutes = require('./routes/AuthRoutes');
 app.use('/api/auth', AuthRoutes);
 
+// New routes for certificates and analytics
+const CertificateRoutes = require('./routes/CertificateRoutes');
+app.use('/api/certificates', CertificateRoutes);
+const AnalyticsRoutes = require('./routes/AnalyticsRoutes');
+app.use('/api/analytics', AnalyticsRoutes);
+
 // Sample route
 app.get('/', (req, res) => {
     res.send('Hello World!');

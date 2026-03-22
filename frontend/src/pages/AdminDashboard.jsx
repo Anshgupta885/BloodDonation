@@ -6,6 +6,7 @@ import axios from 'axios';
 
 export default function AdminDashboard({ user, onLogout }) {
   const [dashboardData, setDashboardData] = useState(null);
+  const [userCounts, setUserCounts] = useState({ total: 0, blocked: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -16,10 +17,21 @@ export default function AdminDashboard({ user, onLogout }) {
       try {
         const token = localStorage.getItem('token');
         if (!token) { setError('Authentication token not found.'); return; }
-        const response = await axios.get('/api/admins/dashboard', {
-          headers: { Authorization: `Bearer ${token}` },
+        const [analyticsRes, usersRes] = await Promise.all([
+          axios.get('/api/analytics', {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get('/api/admins/users?type=all', {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+        ]);
+
+        const users = Array.isArray(usersRes.data?.users) ? usersRes.data.users : [];
+        setUserCounts({
+          total: users.length,
+          blocked: users.filter((u) => u.isBlocked).length
         });
-        setDashboardData(response.data);
+        setDashboardData(analyticsRes.data);
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to fetch dashboard data.');
       } finally {
@@ -28,15 +40,6 @@ export default function AdminDashboard({ user, onLogout }) {
     };
     fetchData();
   }, []);
-
-  const getActivityIcon = (type) => {
-    switch (type) {
-      case 'donor': return Users;
-      case 'hospital': return Building2;
-      case 'donation': return Droplet;
-      default: return Activity;
-    }
-  };
 
   if (loading) return (
     <div className="flex justify-center items-center h-64">
@@ -49,14 +52,14 @@ export default function AdminDashboard({ user, onLogout }) {
 
   if (error) return (
     <div className="flex items-center gap-4 bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-2xl">
-      <AlertCircle className="w-6 h-6 flex-shrink-0" />
+      <AlertCircle className="w-6 h-6 shrink-0" />
       <p className="font-medium">{error}</p>
     </div>
   );
 
   if (!dashboardData) return null;
 
-  const { stats, monthlyData, bloodGroupData, recentActivities } = dashboardData;
+  const { stats, monthlyData, bloodGroupData, recentActivity } = dashboardData;
   const statItems = [
     { label: 'Total Donors', value: stats.totalDonors, icon: '👥', emoji: '🩸', color: '#ff3b5c', bg: 'stat-red' },
     { label: 'Total Hospitals', value: stats.totalHospitals, icon: '🏥', emoji: '🏥', color: '#7c3aed', bg: 'stat-purple' },
@@ -161,51 +164,53 @@ export default function AdminDashboard({ user, onLogout }) {
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-6 border-b border-gray-100 flex items-center gap-3">
             <span className="text-xl">⚡</span>
-            <h2 className="font-bold text-gray-900">Recent Activities</h2>
+            <h2 className="font-bold text-gray-900">Live System Metrics</h2>
           </div>
-          <div className="divide-y divide-gray-50">
-            {recentActivities.map((activity) => {
-              const Icon = getActivityIcon(activity.type);
-              return (
-                <div key={activity.id} className="p-5 hover:bg-gray-50 transition-colors flex gap-4 items-start">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                    activity.status === 'success' ? 'bg-green-100 text-green-600' :
-                    activity.status === 'warning' ? 'bg-orange-100 text-orange-600' :
-                    'bg-blue-100 text-blue-600'
-                  }`}>
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-gray-800 font-medium text-sm">{activity.message}</p>
-                    <p className="text-xs text-gray-400 mt-1">{activity.time}</p>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="p-6 grid sm:grid-cols-2 gap-4">
+            <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
+              <p className="text-xs text-blue-700 font-semibold uppercase tracking-wider">Last 7 Days</p>
+              <p className="text-2xl font-extrabold text-blue-900 mt-1">{recentActivity?.donations || 0}</p>
+              <p className="text-sm text-blue-700">Donations completed</p>
+            </div>
+            <div className="rounded-xl border border-orange-100 bg-orange-50 p-4">
+              <p className="text-xs text-orange-700 font-semibold uppercase tracking-wider">Last 7 Days</p>
+              <p className="text-2xl font-extrabold text-orange-900 mt-1">{recentActivity?.requests || 0}</p>
+              <p className="text-sm text-orange-700">Requests created</p>
+            </div>
+            <div className="rounded-xl border border-rose-100 bg-rose-50 p-4">
+              <p className="text-xs text-rose-700 font-semibold uppercase tracking-wider">Users</p>
+              <p className="text-2xl font-extrabold text-rose-900 mt-1">{userCounts.total}</p>
+              <p className="text-sm text-rose-700">Total platform users</p>
+            </div>
+            <div className="rounded-xl border border-red-100 bg-red-50 p-4">
+              <p className="text-xs text-red-700 font-semibold uppercase tracking-wider">Users</p>
+              <p className="text-2xl font-extrabold text-red-900 mt-1">{userCounts.blocked}</p>
+              <p className="text-sm text-red-700">Blocked accounts</p>
+            </div>
           </div>
         </div>
 
         <div className="space-y-4">
-          <Link to="/admin/manage-donors" className="card-lift block rounded-2xl p-6 text-white overflow-hidden relative shadow-lg"
+          <Link to="/dashboard/admin/manage-donors" className="card-lift block rounded-2xl p-6 text-white overflow-hidden relative shadow-lg"
             style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', boxShadow: '0 10px 30px rgba(59,130,246,0.35)' }}>
             <div className="absolute top-0 right-0 text-8xl opacity-10">👥</div>
             <div className="text-4xl mb-4">👥</div>
             <h3 className="text-xl font-bold mb-1">Manage Donors</h3>
             <p className="text-blue-100 text-sm">View and manage donor accounts</p>
           </Link>
-          <Link to="/admin/manage-hospitals" className="card-lift block rounded-2xl p-6 text-white overflow-hidden relative shadow-lg"
+          <Link to="/dashboard/admin/manage-hospitals" className="card-lift block rounded-2xl p-6 text-white overflow-hidden relative shadow-lg"
             style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', boxShadow: '0 10px 30px rgba(124,58,237,0.35)' }}>
             <div className="absolute top-0 right-0 text-8xl opacity-10">🏥</div>
             <div className="text-4xl mb-4">🏥</div>
             <h3 className="text-xl font-bold mb-1">Manage Hospitals</h3>
-            <p className="text-purple-100 text-sm">View and verify hospitals</p>
+            <p className="text-purple-100 text-sm">View and manage hospital accounts</p>
           </Link>
         </div>
       </div>
 
       {/* System Notice */}
       <div className="rounded-2xl p-6 border flex items-start gap-4" style={{ background: 'linear-gradient(135deg, #fff7ed, #ffedd5)', borderColor: '#fed7aa' }}>
-        <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0 text-xl">⚠️</div>
+        <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center shrink-0 text-xl">⚠️</div>
         <div>
           <h3 className="font-bold text-orange-900 mb-1">System Notice</h3>
           <p className="text-orange-700 text-sm mb-3">Scheduled maintenance on January 31, 2026 from 2:00 AM to 4:00 AM EST.</p>

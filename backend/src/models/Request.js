@@ -6,6 +6,7 @@ const RequestSchema = new mongoose.Schema({
     urgency: { type: String, required: true },
     patientName: { type: String, required: true },
     city: { type: String, required: true },
+    pincode: { type: String },
     byDate: { type: Date, required: true },
     purpose: { type: String, required: true },
     contactName: { type: String, required: true },
@@ -13,7 +14,7 @@ const RequestSchema = new mongoose.Schema({
     requester: { type: mongoose.Schema.Types.ObjectId, required: true, refPath: 'requesterModel' },
     requesterModel: { type: String, required: true, enum: ['Hospital', 'Requester'] },
     donor: { type: mongoose.Schema.Types.ObjectId, ref: 'Donor' },
-    status: { type: String, enum: ['pending', 'fulfilled'], default: 'pending' },
+    status: { type: String, enum: ['pending', 'accepted', 'completed', 'cancelled'], default: 'pending' },
  }, { timestamps: true });
  
 const Request = mongoose.model('Request', RequestSchema);

@@ -9,9 +9,9 @@ async function updateDonorDetails(req,res){
         const token=req.headers.authorization.split(' ')[1];
         const decoded=jwt.verify(token,process.env.JWT_SECRET_KEY);
         const donorId=decoded.id;
-        const {name,phone,city,bloodGroup}=req.body;
+        const {name,age,phone,city,pincode,bloodGroup}=req.body;
         const updatedDonor=await donor.findByIdAndUpdate(donorId,
-            {name,phone,city,bloodGroup},
+            {name,age,phone,city,pincode,bloodGroup},
             {new:true}
         ).select('-password');
         if(!updatedDonor){
@@ -27,9 +27,9 @@ async function updateDonorDetails(req,res){
         const token=req.headers.authorization.split(' ')[1];
         const decoded=jwt.verify(token,process.env.JWT_SECRET_KEY);
         const hospitalId=decoded.id;
-        const {HospitalName,phone,address, City}=req.body;
+        const {HospitalName,phone,address, City,pincode}=req.body;
         const updatedHospital=await Hospital.findByIdAndUpdate(hospitalId,
-            {HospitalName,phone,address, City},
+            {HospitalName,phone,address, City,pincode},
             {new:true}
         ).select('-password');  
         if(!updatedHospital){
@@ -45,9 +45,9 @@ async function updateDonorDetails(req,res){
         const token=req.headers.authorization.split(' ')[1];
         const decoded=jwt.verify(token,process.env.JWT_SECRET_KEY);
         const requesterId=decoded.id;
-        const {name,phone,address}=req.body;
+        const {name,age,phone,address,pincode,roleAlias}=req.body;
         const updatedRequester=await Requester.findByIdAndUpdate(requesterId,
-            {name,phone,address},
+            {name,age,phone,address,pincode,roleAlias},
             {new:true}
         ).select('-passwordHash');
         if(!updatedRequester){

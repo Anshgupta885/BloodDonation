@@ -16,7 +16,7 @@ export default function LoginPage({ onLogin }) {
 
   const userTypes = [
     { id: 'donor', emoji: '🩸', label: 'Donor' },
-    { id: 'requester', emoji: '💊', label: 'Requester' },
+    { id: 'requester', emoji: '💊', label: 'Recipient/Patient' },
     { id: 'hospital', emoji: '🏥', label: 'Hospital' },
     { id: 'admin', emoji: '🔐', label: 'Admin' },
   ];
@@ -179,7 +179,7 @@ export default function LoginPage({ onLogin }) {
 
             {error && (
               <div className="flex items-center gap-3 bg-red-50 border border-red-200 p-3.5 rounded-xl">
-                <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
                 <p className="text-sm text-red-700 font-medium">{error}</p>
               </div>
             )}

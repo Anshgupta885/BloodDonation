@@ -27,6 +27,10 @@ const multiTypeAuthMiddleware = async (req, res, next) => {
         if (!data) {
             return res.status(401).json({ message: "Unauthorized: Invalid token" });
         }
+
+        if (data.isBlocked) {
+            return res.status(403).json({ message: 'Account is blocked. Contact admin.' });
+        }
         
         const user = data.toObject();
         user.type = decoded.type;
@@ -50,6 +54,9 @@ const authMiddleware = (model) => async (req, res, next) => {
         const data = await model.findById(decoded.id);
         if (!data) {
             return res.status(401).json({ message: "Unauthorized: Invalid token" });
+        }
+        if (data.isBlocked) {
+            return res.status(403).json({ message: 'Account is blocked. Contact admin.' });
         }
         req.user = data;
         next();

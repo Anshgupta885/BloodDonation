@@ -3,14 +3,43 @@ const router = express.Router();
 const { registerDonor, loginDonor, logoutDonor, getDonorDashboard, toggleDonorAvailability, searchDonors } = require('../controllers/AuthController');
 const { updateDonorDetails } = require('../controllers/updateDetails.Controller');
 const { authMiddleware, multiTypeAuthMiddleware } = require('../middlewares/auth.middlewares');
+const { 
+    getMatchingDonors, 
+    checkDonorEligibility, 
+    getDonationHistory, 
+    recordDonation,
+    getLeaderboard,
+    getDonorRank,
+    scheduleAppointment,
+    getDonorAppointments,
+    cancelAppointment
+} = require('../controllers/DonorController');
 const Donor = require('../models/Donor');
+const { requireFields, validateEmailAndPassword } = require('../middlewares/validation.middleware');
 
-router.post('/register/donor', registerDonor);
-router.post('/login/donor', loginDonor);
+router.post('/register/donor', requireFields(['name', 'bloodGroup', 'email', 'phone', 'city', 'password']), validateEmailAndPassword, registerDonor);
+router.post('/login/donor', requireFields(['email', 'password']), loginDonor);
 router.get('/logout/donor', logoutDonor);
 router.get('/dashboard', authMiddleware(Donor), getDonorDashboard);
 router.post('/availability', authMiddleware(Donor), toggleDonorAvailability);
 router.get('/search', multiTypeAuthMiddleware, searchDonors);
+
+// Donor matching & eligibility routes
+router.get('/matching', multiTypeAuthMiddleware, getMatchingDonors);
+router.get('/eligibility', authMiddleware(Donor), checkDonorEligibility);
+
+// Donation history routes
+router.get('/donations/history', authMiddleware(Donor), getDonationHistory);
+router.post('/donations/record', multiTypeAuthMiddleware, recordDonation);
+
+// Leaderboard routes
+router.get('/leaderboard', getLeaderboard);
+router.get('/rank', authMiddleware(Donor), getDonorRank);
+
+// Appointment routes
+router.post('/appointments', authMiddleware(Donor), scheduleAppointment);
+router.get('/appointments', authMiddleware(Donor), getDonorAppointments);
+router.delete('/appointments/:appointmentId', authMiddleware(Donor), cancelAppointment);
 
 // Profile routes
 router.get('/profile', authMiddleware(Donor), async (req, res) => {

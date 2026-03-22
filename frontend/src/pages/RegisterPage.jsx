@@ -15,7 +15,7 @@ export default function RegisterPage() {
   }, [searchParams]);
 
   const [formData, setFormData] = useState({
-    name: '', email: '', password: '', phone: '', bloodGroup: 'A+', city: '', address: '', secretKey: '',
+    name: '', age: '', email: '', password: '', phone: '', bloodGroup: 'A+', city: '', pincode: '', address: '', secretKey: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -25,7 +25,7 @@ export default function RegisterPage() {
 
   const userTypes = [
     { id: 'donor', emoji: '🩸', label: 'Donor', desc: 'Give blood, save lives', color: 'from-rose-500 to-pink-600' },
-    { id: 'requester', emoji: '💊', label: 'Requester', desc: 'Request blood units', color: 'from-orange-500 to-amber-600' },
+    { id: 'requester', emoji: '💊', label: 'Recipient/Patient', desc: 'Request blood units', color: 'from-orange-500 to-amber-600' },
     { id: 'hospital', emoji: '🏥', label: 'Hospital', desc: 'Manage blood supply', color: 'from-violet-500 to-purple-600' },
     { id: 'admin', emoji: '🔐', label: 'Admin', desc: 'System administration', color: 'from-blue-600 to-indigo-700' },
   ];
@@ -43,19 +43,19 @@ export default function RegisterPage() {
       payload = { email: formData.email, password: formData.password, secretKey: formData.secretKey };
     } else if (userType === 'donor') {
       url = '/api/donors/register/donor';
-      payload = { name: formData.name, email: formData.email, password: formData.password, phone: formData.phone, bloodGroup: formData.bloodGroup, city: formData.city };
+      payload = { name: formData.name, age: formData.age ? Number(formData.age) : undefined, email: formData.email, password: formData.password, phone: formData.phone, bloodGroup: formData.bloodGroup, city: formData.city, pincode: formData.pincode };
     } else if (userType === 'requester') {
       url = '/api/requesters/register';
-      payload = { name: formData.name, email: formData.email, password: formData.password, phone: formData.phone, address: formData.address, city: formData.city };
+      payload = { name: formData.name, age: formData.age ? Number(formData.age) : undefined, email: formData.email, password: formData.password, phone: formData.phone, address: formData.address, city: formData.city, pincode: formData.pincode, roleAlias: 'patient' };
     } else {
       url = '/api/hospitals/register';
-      payload = { name: formData.name, email: formData.email, password: formData.password, phone: formData.phone, address: formData.address, city: formData.city };
+      payload = { name: formData.name, email: formData.email, password: formData.password, phone: formData.phone, address: formData.address, city: formData.city, pincode: formData.pincode };
     }
 
     try {
       await axios.post(url, payload);
       setSuccess('Registration successful! Redirecting to login...');
-      setFormData({ name: '', email: '', password: '', phone: '', bloodGroup: 'A+', city: '', address: '', secretKey: '' });
+      setFormData({ name: '', age: '', email: '', password: '', phone: '', bloodGroup: 'A+', city: '', pincode: '', address: '', secretKey: '' });
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
@@ -121,13 +121,13 @@ export default function RegisterPage() {
             {/* Feedback */}
             {error && (
               <div className="flex items-center gap-3 bg-red-50 border border-red-200 p-3.5 rounded-xl">
-                <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
                 <p className="text-sm text-red-700 font-medium">{error}</p>
               </div>
             )}
             {success && (
               <div className="flex items-center gap-3 bg-green-50 border border-green-200 p-3.5 rounded-xl">
-                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
                 <p className="text-sm text-green-700 font-medium">{success}</p>
               </div>
             )}
@@ -169,6 +169,17 @@ export default function RegisterPage() {
               </div>
             )}
 
+            {/* Age */}
+            {(userType === 'donor' || userType === 'requester') && (
+              <div>
+                <label className={labelClass}>Age</label>
+                <div className="relative">
+                  <input type="number" min="18" max="100" name="age" value={formData.age} onChange={handleChange}
+                    placeholder="Enter age" className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl outline-none transition-all hover:border-gray-300 focus:border-rose-400" />
+                </div>
+              </div>
+            )}
+
             {/* Blood Group */}
             {userType === 'donor' && (
               <div>
@@ -201,6 +212,15 @@ export default function RegisterPage() {
                   <input type="text" name="city" value={formData.city} onChange={handleChange}
                     placeholder="New York" className={inputClass} required />
                 </div>
+              </div>
+            )}
+
+            {/* Pincode */}
+            {userType !== 'admin' && (
+              <div>
+                <label className={labelClass}>Pincode</label>
+                <input type="text" name="pincode" value={formData.pincode} onChange={handleChange}
+                  placeholder="123456" className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl outline-none transition-all hover:border-gray-300 focus:border-rose-400" />
               </div>
             )}
 
