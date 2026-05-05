@@ -57,19 +57,15 @@ async function registerDonor(req, res) {
 }
 
 async function loginDonor(req, res) {
-    console.log('Login attempt received:', req.body);
     const { email, password } = req.body;
     const donor = await Donor.findOne({ email: email });
-    console.log('Donor found in DB:', donor);
     if (!donor) {
         return res.status(400).json({ message: "Invalid email or password" });
     }
     if (donor.isBlocked) {
         return res.status(403).json({ message: 'Account is blocked. Contact admin.' });
     }
-    console.log('Stored hashed password:', donor.password);
     const isPasswordValid = await bcrypt.compare(password, donor.password);
-    console.log('Password validation result:', isPasswordValid);
     if (!isPasswordValid) {
         return res.status(400).json({ message: "Invalid email or password" });
     }

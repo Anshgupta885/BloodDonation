@@ -1,11 +1,13 @@
 
-  # Blood Donation Management UI
+## Frontend App
 
-  This is a code bundle for Blood Donation Management UI. The original project is available at https://www.figma.com/design/63UklFELPPwUyUbpMk7YCJ/Blood-Donation-Management-UI.
+This folder contains the React/Vite client for LifeFlow.
 
-  ## Running the code
+For the full project overview, setup instructions, API map, and feature list, see the repository README at the root of the workspace.
 
-  Run `npm i` to install the dependencies.
+### Frontend Scripts
 
-  Run `npm run dev` to start the development server.
+- Run `npm install` to install dependencies.
+- Run `npm run dev` to start the development server on port 3000.
+- Run `npm run build` to create a production build.
   
