@@ -1,17 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Droplet, Phone, Mail, MapPin, Facebook, Twitter, Instagram, Menu, X } from 'lucide-react';
 
-export default function PublicLayout() {
+export default function PublicLayout({ user, onLogout }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const dashboardPath = user ? `/dashboard/${user.type}` : '/login';
+
+  const handleAuthAction = () => {
+    if (user && onLogout) {
+      onLogout();
+      navigate('/');
+      setMobileOpen(false);
+      return;
+    }
+
+    navigate('/login');
+    setMobileOpen(false);
+  };
 
   return (
     <div className="min-h-screen" style={{ background: '#f8f7ff' }}>
@@ -54,13 +69,31 @@ export default function PublicLayout() {
 
             {/* CTA + Mobile Toggle */}
             <div className="flex items-center gap-3">
-              <Link
-                to="/login"
-                className="hidden sm:inline-flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white rounded-xl hover:scale-105 transition-all shadow-lg"
-                style={{ background: 'linear-gradient(135deg, #ff3b5c, #ff6b35)', boxShadow: '0 6px 20px rgba(255, 59, 92, 0.35)' }}
-              >
-                Sign In
-              </Link>
+              {user ? (
+                <>
+                  <Link
+                    to={dashboardPath}
+                    className="hidden sm:inline-flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-gray-900 bg-white rounded-xl hover:scale-105 transition-all shadow-lg border border-gray-200"
+                  >
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={handleAuthAction}
+                    className="hidden sm:inline-flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white rounded-xl hover:scale-105 transition-all shadow-lg"
+                    style={{ background: 'linear-gradient(135deg, #ff3b5c, #ff6b35)', boxShadow: '0 6px 20px rgba(255, 59, 92, 0.35)' }}
+                  >
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  className="hidden sm:inline-flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white rounded-xl hover:scale-105 transition-all shadow-lg"
+                  style={{ background: 'linear-gradient(135deg, #ff3b5c, #ff6b35)', boxShadow: '0 6px 20px rgba(255, 59, 92, 0.35)' }}
+                >
+                  Sign In
+                </Link>
+              )}
               <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 hover:bg-gray-100 rounded-xl">
                 {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
@@ -70,12 +103,32 @@ export default function PublicLayout() {
           {/* Mobile Menu */}
           {mobileOpen && (
             <div className="md:hidden pb-4 space-y-2 border-t border-gray-100 pt-4">
-              {[{ to: '/', label: '🏠 Home' }, { to: '/about', label: 'ℹ️ About Us' }, { to: '/contact', label: '📬 Contact' }, { to: '/login', label: '🔑 Sign In' }].map(link => (
-                <Link key={link.to} to={link.to} onClick={() => setMobileOpen(false)}
-                  className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all">
+              {[
+                { to: '/', label: '🏠 Home' },
+                { to: '/about', label: 'ℹ️ About Us' },
+                { to: '/contact', label: '📬 Contact' },
+                ...(user ? [{ to: dashboardPath, label: '📊 Dashboard' }] : [{ to: '/login', label: '🔑 Sign In' }]),
+              ].map(link => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  onClick={() => setMobileOpen(false)}
+                  className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all"
+                >
                   {link.label}
                 </Link>
               ))}
+              {user && onLogout && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleAuthAction}
+                    className="w-full text-left block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all"
+                  >
+                    🚪 Sign Out
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -114,12 +167,18 @@ export default function PublicLayout() {
             <div>
               <h3 className="text-sm font-bold text-white uppercase tracking-widest mb-5">Quick Links</h3>
               <ul className="space-y-3">
-                {['Home', 'About Us', 'Contact', 'Register', 'Login'].map(label => (
-                  <li key={label}>
-                    <a href="#" className="text-sm text-gray-400 hover:text-rose-400 transition-colors flex items-center gap-2">
+                {[
+                  { to: '/', label: 'Home' },
+                  { to: '/about', label: 'About Us' },
+                  { to: '/contact', label: 'Contact' },
+                  { to: '/register', label: 'Register' },
+                  { to: '/login', label: 'Login' },
+                ].map(link => (
+                  <li key={link.to}>
+                    <Link to={link.to} className="text-sm text-gray-400 hover:text-rose-400 transition-colors flex items-center gap-2">
                       <span className="w-1 h-1 bg-rose-500 rounded-full" />
-                      {label}
-                    </a>
+                      {link.label}
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -131,7 +190,7 @@ export default function PublicLayout() {
               <ul className="space-y-3">
                 {['🩸 Donor Portal', '🏥 Hospital Portal', '💊 Requester Portal', '🔐 Admin Portal'].map(label => (
                   <li key={label}>
-                    <a href="/login" className="text-sm text-gray-400 hover:text-rose-400 transition-colors">{label}</a>
+                    <Link to="/login" className="text-sm text-gray-400 hover:text-rose-400 transition-colors">{label}</Link>
                   </li>
                 ))}
               </ul>
@@ -147,7 +206,7 @@ export default function PublicLayout() {
                   { Icon: MapPin, text: '123 Life St, Everytown' }
                 ].map(({ Icon, text }, i) => (
                   <li key={i} className="flex items-center gap-3 text-sm text-gray-400">
-                    <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
                       <Icon className="w-4 h-4 text-rose-400" />
                     </div>
                     {text}
@@ -160,8 +219,8 @@ export default function PublicLayout() {
           <div className="mt-12 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-sm text-gray-500">&copy; {new Date().getFullYear()} LifeFlow. All rights reserved.</p>
             <div className="flex gap-6 text-sm text-gray-500">
-              <a href="#" className="hover:text-rose-400 transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-rose-400 transition-colors">Terms of Service</a>
+              <Link to="/contact" className="hover:text-rose-400 transition-colors">Privacy Policy</Link>
+              <Link to="/about" className="hover:text-rose-400 transition-colors">Terms of Service</Link>
             </div>
           </div>
         </div>

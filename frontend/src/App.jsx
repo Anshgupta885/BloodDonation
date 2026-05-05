@@ -12,6 +12,8 @@ const DonorProfile = lazy(() => import('./pages/DonorProfile.jsx'));
 const DonorSearch = lazy(() => import('./pages/DonorSearch.jsx'));
 const HospitalDashboard = lazy(() => import('./pages/HospitalDashboard.jsx'));
 const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
+const AboutPage = lazy(() => import('./pages/AboutPage.jsx'));
+const ContactPage = lazy(() => import('./pages/ContactPage.jsx'));
 const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
 const ManageDonors = lazy(() => import('./pages/ManageDonors.jsx'));
 const ManageHospitals = lazy(() => import('./pages/ManageHospitals.jsx'));
@@ -84,8 +86,10 @@ function App() {
       <Suspense fallback={<div>Loading page...</div>}>
         <Routes>
           {/* Public Routes */}
-          <Route element={<PublicLayout />}>
-            <Route path="/" element={<LandingPage />} />
+          <Route element={<PublicLayout user={user} onLogout={handleLogout} />}>
+            <Route index element={<LandingPage />} />
+            <Route path="about" element={<AboutPage />} />
+            <Route path="contact" element={<ContactPage />} />
             <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
             <Route path="/register" element={<RegisterPage />} />
           </Route>
