@@ -7,6 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "build": "...",
     "migrate:request-status": "node scripts/migrateRequestStatus.js",
     "migrate:request-status:apply": "node scripts/migrateRequestStatus.js --apply"
   },
@@ -27,4 +28,5 @@
     "pdfkit": "^0.15.0",
     "react-router-dom": "^7.13.0"
   }
+ 
 }
