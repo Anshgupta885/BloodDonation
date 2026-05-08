@@ -4,28 +4,30 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-// Track if we've already connected to MongoDB
 let mongoConnected = false;
 
-// Middleware to ensure MongoDB connection
-app.use(async (req, res, next) => {
+// This must be the FIRST middleware
+const originalListen = app.listen.bind(app);
+
+async function connectDB() {
   if (!mongoConnected && process.env.MONGO_URI) {
-    try {
-      if (mongoose.connection.readyState !== 1) {
-        await mongoose.connect(process.env.MONGO_URI, {
-          maxPoolSize: 10,
-          serverSelectionTimeoutMS: 5000,
-        });
-        console.log('MongoDB connected via serverless handler');
-        mongoConnected = true;
-      }
-    } catch (error) {
-      console.error('Failed to connect to MongoDB:', error);
-      return res.status(500).json({ error: 'Database connection failed' });
+    if (mongoose.connection.readyState !== 1) {
+      await mongoose.connect(process.env.MONGO_URI, {
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 5000,
+      });
+      mongoConnected = true;
     }
   }
-  next();
-});
+}
 
-// Export the Express app for Vercel
-module.exports = app;
+// Wrap the handler for Vercel
+module.exports = async (req, res) => {
+  try {
+    await connectDB();
+  } catch (err) {
+    console.error('MongoDB connection failed:', err);
+    return res.status(500).json({ error: 'Database connection failed' });
+  }
+  app(req, res);
+};
