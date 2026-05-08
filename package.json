@@ -8,6 +8,8 @@
      "jwt-decode": "^4.x.x"
   },
   "scripts": {
-    "build": "vite build"
+    "build": "cd frontend && npm install && npm run build",
+    "start": "cd backend && npm install && npm start",
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\""
   }
 }
