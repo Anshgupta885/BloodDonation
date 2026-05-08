@@ -44,7 +44,7 @@ export default function RequesterDashboard({ user, onLogout }) {
     if (window.confirm('Are you sure you want to cancel this request?')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:5000/api/requests/${requestId}`, { headers: { Authorization: `Bearer ${token}` } });
+        await axios.delete(`/api/requests/${requestId}`, { headers: { Authorization: `Bearer ${token}` } });
         setDashboardData(prev => ({
           ...prev,
           activeRequests: prev.activeRequests.filter(req => req._id !== requestId),

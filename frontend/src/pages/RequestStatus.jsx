@@ -17,7 +17,7 @@ export default function RequestStatus({ user: propUser, onLogout }) {
       try {
         const token = localStorage.getItem('token');
         if (!token) throw new Error('No authentication token found.');
-        const response = await fetch('http://localhost:5000/api/requests/me', {
+        const response = await fetch('/api/requests/me', {
           headers: { 'Authorization': `Bearer ${token}` },
         });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -41,7 +41,7 @@ export default function RequestStatus({ user: propUser, onLogout }) {
     if (window.confirm('Are you sure you want to cancel this request?')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:5000/api/requests/${requestId}`, {
+        await axios.delete(`/api/requests/${requestId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setRequests(prev => prev.filter(req => req._id !== requestId));
@@ -77,7 +77,7 @@ export default function RequestStatus({ user: propUser, onLogout }) {
   const handleCompleteRequest = async (requestId) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`http://localhost:5000/api/requests/${requestId}/complete`, {}, {
+      await axios.post(`/api/requests/${requestId}/complete`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
