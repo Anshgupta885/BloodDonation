@@ -1,6 +1,8 @@
 {
   "version": 2,
+  "framework": null,
   "buildCommand": "npm run build",
+  "installCommand": "npm install",
   "outputDirectory": "frontend/dist",
   "routes": [
     {
@@ -11,5 +13,11 @@
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/index.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  }
 }
