@@ -8,7 +8,7 @@
      "jwt-decode": "^4.0.0"
   },
   "scripts": {
-    "build": "npm install --prefix frontend && npm run build --prefix frontend",
+    "build": "cd frontend && npm install && npm run build",
     "start": "cd backend && npm start",
     "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
     "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install"
